@@ -11,13 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by dolgopolov.a on 22.12.15.
  */
 public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
-	private final Map<E, Object> map;
+	private final Map<E, Object> map = new ConcurrentHashMap<>();
 
 	private static final Object dummy = new Object();
-
-	public ConcurrentHashSet() {
-		map = new ConcurrentHashMap<>();
-	}
 
 	@Override
 	public int size() {
@@ -62,7 +58,20 @@ public class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
 			this.add(iterator.next());
 		}
 		return oldSize == this.map.size();
+	}
 
+	@Override
+	public int hashCode() {
+		return map.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o != null && o instanceof ConcurrentHashSet) {
+			ConcurrentHashSet<?> set = (ConcurrentHashSet<?>) o;
+			return set.map.equals(this.map);
+		}
+		return false;
 	}
 
 }

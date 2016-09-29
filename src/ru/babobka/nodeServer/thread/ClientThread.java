@@ -33,10 +33,9 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 
 	private final RSA rsa;
 
-	// TODO вспомни нахуя тебе это
 	private volatile Set<String> taskSet;
 
-	private static final NodeUsersService USER_SERVICE = NodeUsersServiceImpl.getInstance();
+	private final NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
 	private final AuthService authService = AuthServiceImpl.getInstance();
 
@@ -48,13 +47,17 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 
 	private final Socket socket;
 
-	public ClientThread(Socket socket) throws IOException {
-		this.setName("Client Thread " + new Date());
-		Server.getLogger().log(Level.INFO, "New connection " + socket);
-		this.socket = socket;
-		this.rsa = new RSA(Server.getConfigData().getRsaBitLength());
-
+	public ClientThread(Socket socket) {
+		if (socket != null) {
+			this.setName("Client Thread " + new Date());
+			Server.getLogger().log(Level.INFO, "New connection " + socket);
+			this.socket = socket;
+			this.rsa = new RSA(Server.getConfigData().getRsaBitLength());
+		} else {
+			throw new IllegalArgumentException("Socket can not be null");
+		}
 	}
+	
 
 	public Set<String> getTaskSet() {
 		return taskSet;
@@ -77,7 +80,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 		if (!(request.isRaceStyle() && requestMap.containsKey(request.getTaskId()))) {
 			StreamUtil.sendObject(request, socket);
 			requestMap.put(request.getRequestId(), request);
-			USER_SERVICE.incrementTaskCount(login);
+			userService.incrementTaskCount(login);
 			Server.getLogger().log(Level.INFO, "sendRequest " + request);
 		} else {
 			Server.getLogger().log(Level.INFO, "Request  " + request + " was ignored due to race style");
@@ -146,7 +149,9 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			AuthResult authResult = authService.getAuthResult(rsa, socket);
 
 			if (authResult.isValid()) {
-				Server.getClientThreads().add(this);
+				if (!Server.getClientThreads().add(this)) {
+					throw new RuntimeException("Cluster is full");
+				}
 				this.login = authResult.getLogin();
 				this.taskSet = authResult.getTaskSet();
 				Server.getLogger().log(Level.INFO, login + " from " + socket + " was logged");
@@ -193,7 +198,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 				try {
 					socket.close();
 				} catch (IOException e) {
-					Server.getLogger().log(Level.WARNING, e);
+					Server.getLogger().log(e);
 				}
 			}
 

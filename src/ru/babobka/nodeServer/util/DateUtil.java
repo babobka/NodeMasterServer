@@ -2,11 +2,7 @@ package ru.babobka.nodeServer.util;
 
 import java.util.Calendar;
 
-public final class DateUtil {
-
-	private DateUtil() {
-
-	}
+public interface DateUtil {
 
 	public static int getCurrentHour() {
 		return (int) ((System.currentTimeMillis() / 1000 / 60 / 60) % 24);

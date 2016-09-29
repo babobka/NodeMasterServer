@@ -4,7 +4,6 @@ import ru.babobka.nodeServer.Server;
 import ru.babobka.nodeServer.dao.NodeUsersDAO;
 import ru.babobka.nodeServer.dao.NodeUsersDAOImpl;
 import ru.babobka.nodeServer.model.AuthResult;
-import ru.babobka.nodeServer.model.ConcurrentHashSet;
 import ru.babobka.nodeServer.model.User;
 import ru.babobka.nodeServer.util.StreamUtil;
 import ru.babobka.nodeserials.NodeResponse;
@@ -12,7 +11,9 @@ import ru.babobka.nodeserials.RSA;
 
 import java.math.BigInteger;
 import java.net.Socket;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 
 /**
  * Created by dolgopolov.a on 29.10.15.
@@ -62,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 				if (uriList.isEmpty()) {
 					return new AuthResult(false);
 				}
-				ConcurrentHashSet<String> taskSet = new ConcurrentHashSet<>();
+				Set<String> taskSet = new HashSet<>();
 				for (String uri : uriList) {
 					taskSet.add(uri);
 				}

@@ -90,23 +90,27 @@ public final class StreamUtil {
 		socket.getOutputStream().flush();
 	}
 
-	public static Object receiveObject(Socket socket) throws IOException, ClassNotFoundException {
+	public static Object receiveObject(Socket socket) throws IOException {
 		DataInputStream dIn = new DataInputStream(socket.getInputStream());
 		int length = dIn.readInt();
 		if (length > 0) {
 			byte[] message = new byte[length];
 			dIn.readFully(message, 0, message.length);
+
 			return byteArrayToObject(message);
+
 		}
 		return null;
 	}
 
-	private static Object byteArrayToObject(byte[] byteArray) throws IOException, ClassNotFoundException {
+	private static Object byteArrayToObject(byte[] byteArray) throws IOException {
 		ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
 		ObjectInput in = null;
 		try {
 			in = new ObjectInputStream(bis);
 			return in.readObject();
+		} catch (ClassNotFoundException e) {
+			throw new IOException(e);
 		} finally {
 			try {
 				bis.close();
@@ -129,8 +133,7 @@ public final class StreamUtil {
 		try {
 			out = new ObjectOutputStream(bos);
 			out.writeObject(object);
-			byte[] yourBytes = bos.toByteArray();
-			return yourBytes;
+			return bos.toByteArray();
 		} finally {
 			try {
 				if (out != null) {

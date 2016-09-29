@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 /**
  * Created by dolgopolov.a on 12.01.16.
  */
-class LogBuilder {
+interface LogBuilder {
 
 	static Logger build(String loggerName, String runningFolder, String prefix) throws IOException {
 

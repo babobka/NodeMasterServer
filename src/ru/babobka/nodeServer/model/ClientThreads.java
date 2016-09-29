@@ -1,6 +1,5 @@
 package ru.babobka.nodeServer.model;
 
-import ru.babobka.nodeServer.exception.FullClusterException;
 import ru.babobka.nodeServer.thread.ClientThread;
 import ru.babobka.nodeserials.NodeRequest;
 
@@ -18,11 +17,10 @@ public class ClientThreads {
 
 	private final AtomicReferenceArray<ClientThread> threads;
 
-	private final AtomicInteger size;
+	private final AtomicInteger size = new AtomicInteger(0);
 
 	public ClientThreads(int maxSize) {
 		this.threads = new AtomicReferenceArray<>(maxSize);
-		size = new AtomicInteger(0);
 	}
 
 	public List<ClusterUser> getCurrentClusterUserList() {
@@ -39,33 +37,46 @@ public class ClientThreads {
 		return clusterUserList;
 	}
 
-	public synchronized void remove(ClientThread ct) {
-		for (int i = 0; i < threads.length(); i++) {
-			if (threads.get(i) == ct) {
-				threads.set(i, null);
-				size.decrementAndGet();
-				return;
+	public boolean remove(ClientThread ct) {
+		if (ct != null) {
+			for (int i = 0; i < threads.length(); i++) {
+				if (threads.get(i) == ct) {
+					synchronized (this) {
+						if (threads.get(i) == ct) {
+							threads.set(i, null);
+							size.decrementAndGet();
+							return true;
+						}
+					}
+				}
 			}
 		}
+		return false;
 	}
 
-	public synchronized void add(ClientThread ct) throws FullClusterException {
-
-		for (int i = 0; i < threads.length(); i++) {
-			if (threads.get(i) == null) {
-				threads.set(i, ct);
-				size.incrementAndGet();
-				return;
+	public boolean add(ClientThread ct) {
+		if (ct != null) {
+			for (int i = 0; i < threads.length(); i++) {
+				if (threads.get(i) == null) {
+					synchronized (this) {
+						if (threads.get(i) == null) {
+							threads.set(i, ct);
+							size.incrementAndGet();
+							return true;
+						}
+					}
+				}
 			}
 		}
-		throw new FullClusterException();
+		return false;
 	}
 
-	public synchronized List<ClientThread> getFullList() {
+	public List<ClientThread> getFullList() {
 		ArrayList<ClientThread> clientThreadList = new ArrayList<>();
 		for (int i = 0; i < threads.length(); i++) {
-			if (threads.get(i) != null) {
-				clientThreadList.add(threads.get(i));
+			ClientThread ct = threads.get(i);
+			if (ct != null) {
+				clientThreadList.add(ct);
 			}
 		}
 		Collections.shuffle(clientThreadList);
@@ -109,14 +120,15 @@ public class ClientThreads {
 	}
 
 	public int getClusterSize(String taskName) {
-		int j = 0;
+		int counter = 0;
 		ClientThread ct;
 		for (int i = 0; i < threads.length(); i++) {
-			if ((ct = threads.get(i)) != null && ct.getTaskSet() != null && ct.getTaskSet().contains(taskName)) {
-				j++;
+			ct = threads.get(i);
+			if (ct != null && ct.getTaskSet() != null && ct.getTaskSet().contains(taskName)) {
+				counter++;
 			}
 		}
-		return j;
+		return counter;
 	}
 
 	public boolean isEmpty() {

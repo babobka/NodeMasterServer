@@ -7,13 +7,10 @@ import java.security.MessageDigest;
 /**
  * Created by dolgopolov.a on 06.07.15.
  */
-public final class MathUtil {
+public interface MathUtil {
 
-	private MathUtil() {
 
-	}
-
-	public static byte[] sha2(String message) {
+	static byte[] sha2(String message) {
 		if (message != null) {
 			try {
 				MessageDigest sha256 = MessageDigest.getInstance("SHA-256");

@@ -2,8 +2,9 @@ package ru.babobka.nodeServer.runnable;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
 
-import ru.babobka.nodeServer.Server;
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.thread.ClientThread;
 
 public class HeartBeatingRunnable implements Runnable {
@@ -13,17 +14,19 @@ public class HeartBeatingRunnable implements Runnable {
 
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
-				Thread.sleep(Server.getConfigData().getHeartBeatTimeOutMillis());
-				List<ClientThread> clientThreads = Server.getClientThreads().getFullList();
+				Thread.sleep(ServerContext.getInstance().getConfig().getHeartBeatTimeOutMillis());
+				List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads().getFullList();
 				for (ClientThread clientThread : clientThreads) {
-					try {
-						clientThread.sendHeartBeating();
-					} catch (IOException e) {
-						Server.getLogger().log(e);
+					if (!Thread.currentThread().isInterrupted()) {
+						try {
+							clientThread.sendHeartBeating();
+						} catch (IOException e) {
+							ServerContext.getInstance().getLogger().log(e);
+						}
 					}
 				}
 			} catch (InterruptedException e) {
-				Server.getLogger().log(e);
+				ServerContext.getInstance().getLogger().log(Level.WARNING, e);
 				break;
 			}
 

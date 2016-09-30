@@ -10,12 +10,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.logging.Level;
-
-import ru.babobka.nodeServer.Server;
 import ru.babobka.nodeServer.exception.DistributionException;
 import ru.babobka.nodeServer.exception.EmptyClusterException;
 import ru.babobka.nodeServer.model.AuthResult;
-
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.service.AuthService;
 import ru.babobka.nodeServer.service.AuthServiceImpl;
 import ru.babobka.nodeServer.service.NodeUsersService;
@@ -50,14 +48,13 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 	public ClientThread(Socket socket) {
 		if (socket != null) {
 			this.setName("Client Thread " + new Date());
-			Server.getLogger().log(Level.INFO, "New connection " + socket);
+			ServerContext.getInstance().getLogger().log(Level.INFO, "New connection " + socket);
 			this.socket = socket;
-			this.rsa = new RSA(Server.getConfigData().getRsaBitLength());
+			this.rsa = new RSA(ServerContext.getInstance().getConfig().getRsaBitLength());
 		} else {
 			throw new IllegalArgumentException("Socket can not be null");
 		}
 	}
-	
 
 	public Set<String> getTaskSet() {
 		return taskSet;
@@ -81,10 +78,12 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			StreamUtil.sendObject(request, socket);
 			requestMap.put(request.getRequestId(), request);
 			userService.incrementTaskCount(login);
-			Server.getLogger().log(Level.INFO, "sendRequest " + request);
+			ServerContext.getInstance().getLogger().log(Level.INFO, "sendRequest " + request);
 		} else {
-			Server.getLogger().log(Level.INFO, "Request  " + request + " was ignored due to race style");
-			Server.RESPONSE_STORAGE.get(request.getTaskId()).add(NodeResponse.dummyResponse(request.getTaskId()));
+			ServerContext.getInstance().getLogger().log(Level.INFO,
+					"Request  " + request + " was ignored due to race style");
+			ServerContext.getInstance().getResponseStorage().get(request.getTaskId())
+					.add(NodeResponse.dummyResponse(request.getTaskId()));
 		}
 	}
 
@@ -93,13 +92,13 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			NodeRequest request;
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
-				Server.RESPONSE_STORAGE.setBadResponse(request.getTaskId());
+				ServerContext.getInstance().getResponseStorage().setBadResponse(request.getTaskId());
 				try {
 					DistributionUtil.broadcastStopRequests(
-							Server.getClientThreads().getListByTaskId(request.getTaskId()),
+							ServerContext.getInstance().getClientThreads().getListByTaskId(request.getTaskId()),
 							new NodeRequest(request.getTaskId(), true, request.getTaskName()));
 				} catch (EmptyClusterException e) {
-					Server.getLogger().log(e);
+					ServerContext.getInstance().getLogger().log(e);
 				}
 			}
 			requestMap.clear();
@@ -111,7 +110,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			NodeRequest request;
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
-				Server.RESPONSE_STORAGE.setBadResponse(request.getTaskId());
+				ServerContext.getInstance().getResponseStorage().setBadResponse(request.getTaskId());
 			}
 			requestMap.clear();
 		}
@@ -130,7 +129,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				if (requestEntry.getValue().getTaskId() == stopRequest.getTaskId()) {
-					Server.RESPONSE_STORAGE.setStopResponse(stopRequest.getTaskId());
+					ServerContext.getInstance().getResponseStorage().setStopResponse(stopRequest.getTaskId());
 					requestMap.remove(requestEntry.getValue().getRequestId());
 				}
 			}
@@ -145,51 +144,52 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 	@Override
 	public void run() {
 		try {
-			socket.setSoTimeout(Server.getConfigData().getAuthTimeOutMillis());
+			socket.setSoTimeout(ServerContext.getInstance().getConfig().getAuthTimeOutMillis());
 			AuthResult authResult = authService.getAuthResult(rsa, socket);
-
 			if (authResult.isValid()) {
-				if (!Server.getClientThreads().add(this)) {
-					throw new RuntimeException("Cluster is full");
+				if (!ServerContext.getInstance().getClientThreads().add(this)) {
+					throw new IllegalStateException("Cluster is full");
 				}
 				this.login = authResult.getLogin();
 				this.taskSet = authResult.getTaskSet();
-				Server.getLogger().log(Level.INFO, login + " from " + socket + " was logged");
+				ServerContext.getInstance().getLogger().log(Level.INFO, login + " from " + socket + " was logged");
 				while (!Thread.currentThread().isInterrupted()) {
-					socket.setSoTimeout(Server.getConfigData().getRequestTimeOutMillis());
+					socket.setSoTimeout(ServerContext.getInstance().getConfig().getRequestTimeOutMillis());
 					NodeResponse response = (NodeResponse) StreamUtil.receiveObject(socket);
 
 					if (!response.isHeartBeatingResponse()) {
-						Server.getLogger().log(Level.INFO, response.toString());
+						ServerContext.getInstance().getLogger().log(Level.INFO, response.toString());
 						requestMap.remove(response.getResponseId());
-						if (Server.RESPONSE_STORAGE.exists(response.getTaskId())) {
-							Server.RESPONSE_STORAGE.get(response.getTaskId()).add(response);
+						if (ServerContext.getInstance().getResponseStorage().exists(response.getTaskId())) {
+							ServerContext.getInstance().getResponseStorage().get(response.getTaskId()).add(response);
 						}
 					}
 				}
 			} else {
-				Server.getLogger().log(Level.INFO, socket + " auth fail");
+				ServerContext.getInstance().getLogger().log(Level.INFO, socket + " auth fail");
 			}
 
 		} catch (IOException e) {
-			if (!socket.isClosed()) {
-				Server.getLogger().log(e);
+			if (!Thread.currentThread().isInterrupted() || !socket.isClosed()) {
+				ServerContext.getInstance().getLogger().log(e);
 			}
-			Server.getLogger().log(Level.WARNING, "Connection is closed " + socket + ". " + e.getMessage());
+			ServerContext.getInstance().getLogger().log(Level.WARNING,
+					"Connection is closed " + socket + ". " + e.getMessage());
 		} catch (Exception e) {
-			Server.getLogger().log(Level.SEVERE, e);
+			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 		} finally {
-			Server.getLogger().log(Level.INFO, "Removing connection " + socket);
-			Server.getClientThreads().remove(this);
+			ServerContext.getInstance().getLogger().log(Level.INFO, "Removing connection " + socket);
+			ServerContext.getInstance().getClientThreads().remove(this);
 			synchronized (REDISTRIBUTION_LOCK) {
 				if (!requestMap.isEmpty()) {
 					try {
-						DistributionUtil.redistribute(this);
+						DistributionUtil.redistribute(this,
+								ServerContext.getInstance().getConfig().getMaxBroadcastRetry());
 					} catch (DistributionException e) {
-						Server.getLogger().log(e);
+						ServerContext.getInstance().getLogger().log(e);
 						setBadAndCancelAllTheRequests();
 					} catch (EmptyClusterException e) {
-						Server.getLogger().log(e);
+						ServerContext.getInstance().getLogger().log(e);
 						setBadAllTheRequests();
 					}
 				}
@@ -198,7 +198,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 				try {
 					socket.close();
 				} catch (IOException e) {
-					Server.getLogger().log(e);
+					ServerContext.getInstance().getLogger().log(e);
 				}
 			}
 
@@ -231,6 +231,17 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			return 1;
 		}
 		return 0;
+	}
+
+	@Override
+	public void interrupt() {
+		super.interrupt();
+		try {
+			socket.close();
+		} catch (IOException e) {
+			ServerContext.getInstance().getLogger().log(e);
+		}
+
 	}
 
 }

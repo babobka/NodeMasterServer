@@ -9,7 +9,6 @@ import ru.babobka.nodeServer.exception.UserAlreadyExistsException;
 import ru.babobka.nodeServer.model.User;
 import ru.babobka.nodeServer.service.NodeUsersService;
 import ru.babobka.nodeServer.service.NodeUsersServiceImpl;
-import ru.babobka.vsjws.constant.ContentType;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
@@ -38,8 +37,7 @@ public class NodeUsersCRUDWebController extends WebController {
 	public HttpResponse onDelete(HttpRequest request) {
 		String userName = request.getUrlParam("userName");
 		if (userName == null) {
-			return HttpResponse.textResponse("Parameter 'userName' was not set", ResponseCode.BAD_REQUEST,
-					ContentType.PLAIN);
+			return HttpResponse.textResponse("Parameter 'userName' was not set", ResponseCode.BAD_REQUEST);
 		} else {
 			if (nodeUsersService.remove(userName)) {
 				return HttpResponse.ok();
@@ -62,11 +60,10 @@ public class NodeUsersCRUDWebController extends WebController {
 							ResponseCode.INTERNAL_SERVER_ERROR);
 				}
 			} catch (UserAlreadyExistsException e) {
-				return HttpResponse.textResponse("User '" + user.getName() + "' already exists",
-						ResponseCode.BAD_REQUEST);
+				return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
 			}
 		} catch (InvalidUserException | JSONException e) {
-			return HttpResponse.textResponse(e.getMessage(), ResponseCode.BAD_REQUEST);
+			return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
 		}
 
 	}

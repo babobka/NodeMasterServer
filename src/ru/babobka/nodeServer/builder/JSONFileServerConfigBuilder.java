@@ -5,19 +5,18 @@ import java.io.File;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import ru.babobka.nodeServer.Server;
 import ru.babobka.nodeServer.exception.ServerConfigurationException;
-import ru.babobka.nodeServer.model.ServerConfigData;
+import ru.babobka.nodeServer.model.ServerConfig;
 import ru.babobka.nodeServer.util.StreamUtil;
 
 public interface JSONFileServerConfigBuilder {
 
-	public static ServerConfigData build() throws ServerConfigurationException {
-		String configFilePath = Server.getRunningFolder() + File.separator + "config" + File.separator + "config.json";
+	public static ServerConfig build(String runningFolder) throws ServerConfigurationException {
+		String configFilePath = runningFolder + File.separator + "config" + File.separator + "config.json";
 		File jsonFile = new File(configFilePath);
 		if (jsonFile.exists()) {
 			try {
-				return new ServerConfigData(new JSONObject(StreamUtil.readFile(configFilePath)));
+				return new ServerConfig(new JSONObject(StreamUtil.readFile(configFilePath)));
 
 			} catch (JSONException e) {
 				throw new ServerConfigurationException(

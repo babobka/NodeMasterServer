@@ -19,7 +19,6 @@ public class XMLServerConfigData {
 
 	private int webPort;
 
-	private int cacheTimeOutSec;
 
 	private String adminEmail;
 
@@ -32,7 +31,7 @@ public class XMLServerConfigData {
 	}
 
 	public XMLServerConfigData(int maxClients, int authTimeOutMillis, int rsaBitLength, int port,
-			int requestTimeOutMillis, int heartBeatTimeOutMillis, int webPort, int cacheTimeOutSec, String adminEmail,
+			int requestTimeOutMillis, int heartBeatTimeOutMillis, int webPort,  String adminEmail,
 			int maxRetry, String clientJarURL) {
 
 		this.maxClients = maxClients;
@@ -42,7 +41,6 @@ public class XMLServerConfigData {
 		this.requestTimeOutMillis = requestTimeOutMillis;
 		this.heartBeatTimeOutMillis = heartBeatTimeOutMillis;
 		this.webPort = webPort;
-		this.cacheTimeOutSec = cacheTimeOutSec;
 		this.adminEmail = adminEmail;
 		this.maxRetry = maxRetry;
 		this.clientJarURL = clientJarURL;
@@ -112,13 +110,6 @@ public class XMLServerConfigData {
 		this.webPort = webPort;
 	}
 
-	public int getCacheTimeOutSec() {
-		return cacheTimeOutSec;
-	}
-
-	public void setCacheTimeOutSec(int cacheTimeOutSec) {
-		this.cacheTimeOutSec = cacheTimeOutSec;
-	}
 
 	public String getAdminEmail() {
 		return adminEmail;

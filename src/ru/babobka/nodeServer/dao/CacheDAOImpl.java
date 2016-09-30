@@ -3,8 +3,9 @@ package ru.babobka.nodeServer.dao;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
-import ru.babobka.nodeServer.Server;
+
 import ru.babobka.nodeServer.datasource.RedisDatasource;
+import ru.babobka.nodeServer.model.ServerContext;
 
 public class CacheDAOImpl implements CacheDAO {
 
@@ -38,7 +39,7 @@ public class CacheDAOImpl implements CacheDAO {
 			jedis = RedisDatasource.getInstance().getPool().getResource();
 			return jedis.hget(NODE_RESPONSES, key);
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 		} finally {
 			if (jedis != null)
 				jedis.close();
@@ -59,7 +60,7 @@ public class CacheDAOImpl implements CacheDAO {
 			t.exec();
 			return true;
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 			if (t != null) {
 				t.discard();
 			}

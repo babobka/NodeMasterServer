@@ -2,8 +2,8 @@ package ru.babobka.nodeServer.webController;
 
 import org.json.JSONException;
 
-import ru.babobka.nodeServer.Server;
 import ru.babobka.nodeServer.model.ResponsesArrayMeta;
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
@@ -19,7 +19,7 @@ public class TasksInfoWebController extends WebController {
 		if (!taskIdString.isEmpty()) {
 			try {
 				Long taskId = Long.parseLong(taskIdString);
-				ResponsesArrayMeta task = Server.RESPONSE_STORAGE.getTaskMeta(taskId);
+				ResponsesArrayMeta task = ServerContext.getInstance().getResponseStorage().getTaskMeta(taskId);
 				if (task != null) {
 					return HttpResponse.jsonResponse(task);
 				} else {
@@ -30,7 +30,7 @@ public class TasksInfoWebController extends WebController {
 			}
 
 		} else {
-			return HttpResponse.jsonResponse(Server.RESPONSE_STORAGE.getRunningTasksMetaMap());
+			return HttpResponse.jsonResponse(ServerContext.getInstance().getResponseStorage().getRunningTasksMetaMap());
 		}
 	}
 

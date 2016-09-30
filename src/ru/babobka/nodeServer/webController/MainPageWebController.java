@@ -10,7 +10,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.transform.stream.StreamSource;
 
-import ru.babobka.nodeServer.Server;
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.util.StreamUtil;
 import ru.babobka.nodeServer.xml.XMLServerConfigData;
 import ru.babobka.vsjws.model.HttpRequest;
@@ -25,7 +25,7 @@ public class MainPageWebController extends WebController {
 		Marshaller m = context.createMarshaller();
 		m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
 		StringWriter sw = new StringWriter();
-		m.marshal(Server.getConfigData().toXML(), sw);
+		m.marshal(ServerContext.getInstance().getConfig().toXML(), sw);
 		String xmlString = sw.toString();
 		return HttpResponse.xsltResponse(xmlString, new StreamSource(
 				StreamUtil.getRunningFolder() + File.separator + "web-content" + File.separator + "mainPage.xsl"));

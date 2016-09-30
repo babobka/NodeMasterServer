@@ -1,9 +1,10 @@
 package ru.babobka.nodeServer.service;
 
-import ru.babobka.nodeServer.Server;
+
 import ru.babobka.nodeServer.dao.NodeUsersDAO;
 import ru.babobka.nodeServer.dao.NodeUsersDAOImpl;
 import ru.babobka.nodeServer.model.AuthResult;
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.model.User;
 import ru.babobka.nodeServer.util.StreamUtil;
 import ru.babobka.nodeserials.NodeResponse;
@@ -77,7 +78,7 @@ public class AuthServiceImpl implements AuthService {
 				return new AuthResult(false);
 			}
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 			return new AuthResult(false);
 		}
 	}

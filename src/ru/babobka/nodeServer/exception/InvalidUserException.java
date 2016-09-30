@@ -1,6 +1,6 @@
 package ru.babobka.nodeServer.exception;
 
-public class InvalidUserException extends Exception {
+public class InvalidUserException extends RuntimeException {
 
 	/**
 	 * 

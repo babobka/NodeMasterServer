@@ -1,6 +1,6 @@
 package ru.babobka.nodeServer.model;
 
-import ru.babobka.nodeServer.Server;
+
 import ru.babobka.nodeServer.exception.EmptyClusterException;
 import ru.babobka.nodeServer.thread.ClientThread;
 import ru.babobka.nodeServer.util.DistributionUtil;
@@ -69,12 +69,14 @@ public final class ResponsesArray {
 					if (size.intValue() == responseArray.length()) {
 						this.notifyAll();
 						if (corruptedResponseCount == size.intValue()) {
-							Server.getLogger().log(Level.INFO, TASK + " " + response.getTaskId() + " was canceled");
+							ServerContext.getInstance().getLogger().log(Level.INFO,
+									TASK + " " + response.getTaskId() + " was canceled");
 						} else {
-							Server.getLogger().log(Level.INFO, TASK + " " + response.getTaskId() + " is ready ");
+							ServerContext.getInstance().getLogger().log(Level.INFO,
+									TASK + " " + response.getTaskId() + " is ready ");
 						}
 					} else if (subTask.isRaceStyle() && subTask.getReducer().isValidResponse(response)) {
-						List<ClientThread> clientThreads = Server.getClientThreads()
+						List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads()
 								.getListByTaskId(response.getTaskId());
 						try {
 							if (clientThreads.size() > 1) {
@@ -82,7 +84,7 @@ public final class ResponsesArray {
 										new NodeRequest(response.getTaskId(), true, response.getTaskName()));
 							}
 						} catch (EmptyClusterException e) {
-							Server.getLogger().log(Level.SEVERE, e);
+							ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 						}
 
 					}
@@ -105,7 +107,7 @@ public final class ResponsesArray {
 					size.incrementAndGet();
 					if (size.intValue() == responseArray.length()) {
 						this.notifyAll();
-						Server.getLogger().log(Level.INFO,
+						ServerContext.getInstance().getLogger().log(Level.INFO,
 								TASK + " " + response.getTaskId() + " is ready due to filling");
 						break;
 					}
@@ -126,7 +128,7 @@ public final class ResponsesArray {
 			}
 			return responses;
 		} catch (InterruptedException e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 		}
 		return responses;
 

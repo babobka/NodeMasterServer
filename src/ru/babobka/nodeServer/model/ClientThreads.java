@@ -55,7 +55,7 @@ public class ClientThreads {
 	}
 
 	public boolean add(ClientThread ct) {
-		if (ct != null) {
+		if (ct != null && size.intValue() != threads.length()) {
 			for (int i = 0; i < threads.length(); i++) {
 				if (threads.get(i) == null) {
 					synchronized (this) {
@@ -129,6 +129,30 @@ public class ClientThreads {
 			}
 		}
 		return counter;
+	}
+
+	private void interruptAll() {
+
+		List<ClientThread> clientThreadsList = getFullList();
+		for (ClientThread ct : clientThreadsList) {
+			ct.interrupt();
+		}
+	}
+
+	public void clear() {
+		if (!isEmpty()) {
+			synchronized (this) {
+				if (!isEmpty()) {
+					interruptAll();
+					for (int i = 0; i < threads.length(); i++) {
+						threads.set(i, null);
+					}
+					size.set(0);
+
+				}
+			}
+		}
+
 	}
 
 	public boolean isEmpty() {

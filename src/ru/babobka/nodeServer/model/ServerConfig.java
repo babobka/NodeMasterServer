@@ -1,15 +1,11 @@
 package ru.babobka.nodeServer.model;
 
-import java.util.logging.Level;
-
 import org.json.JSONObject;
-
-import ru.babobka.nodeServer.Server;
 import ru.babobka.nodeServer.constant.RegularPatterns;
 import ru.babobka.nodeServer.exception.ServerConfigurationException;
 import ru.babobka.nodeServer.xml.XMLServerConfigData;
 
-public class ServerConfigData {
+public class ServerConfig {
 
 	private final int maxClients;
 
@@ -29,9 +25,7 @@ public class ServerConfigData {
 
 	private final int webPort;
 
-	private final int maxRetry;
-
-	private final int cacheTimeOutSec;
+	private final int maxBroadcastRetry;
 
 	private final String restServiceLogin;
 
@@ -39,10 +33,13 @@ public class ServerConfigData {
 
 	private final String redisHost;
 
-	private ServerConfigData(int maxClients, int authTimeOutMillis, int rsaBitLength, int port,
-			int requestTimeOutMillis, int heartBeatTimeOutMillis, int webPort, int cacheTimeOutSec, String adminEmail,
-			int maxRetry, String clientJarURL, String restServiceLogin, String restServicePassword, String redisHost)
-			throws ServerConfigurationException {
+	private static final int PORT_MIN = 1024;
+
+	private static final int PORT_MAX = 65535;
+
+	public ServerConfig(int maxClients, int authTimeOutMillis, int rsaBitLength, int port, int requestTimeOutMillis,
+			int heartBeatTimeOutMillis, int webPort, String adminEmail, int maxBroadcastRetry, String clientJarURL,
+			String restServiceLogin, String restServicePassword, String redisHost) {
 		if (maxClients <= 0) {
 			throw new ServerConfigurationException("'maxClients' value must be positive");
 		}
@@ -58,8 +55,8 @@ public class ServerConfigData {
 		this.rsaBitLength = rsaBitLength;
 		if (port <= 0) {
 			throw new ServerConfigurationException("'port' value must be positive");
-		} else if (port < 1024 || port > 65535) {
-			throw new ServerConfigurationException("'port' must be in range [1024;65353]");
+		} else if (port < PORT_MIN || port > PORT_MAX) {
+			throw new ServerConfigurationException("'port' must be in range [" + PORT_MIN + ";" + PORT_MAX + "]");
 		}
 		this.port = port;
 		if (requestTimeOutMillis <= 0) {
@@ -75,16 +72,12 @@ public class ServerConfigData {
 		this.heartBeatTimeOutMillis = heartBeatTimeOutMillis;
 		if (webPort <= 0) {
 			throw new ServerConfigurationException("'webPort' value must be positive");
-		} else if (webPort < 1024 || webPort > 65535) {
-			throw new ServerConfigurationException("'webPort' must be in range [1024;65353]");
+		} else if (webPort < PORT_MIN || webPort > PORT_MAX) {
+			throw new ServerConfigurationException("'webPort' must be in range [" + PORT_MIN + ";" + PORT_MAX + "]");
 		} else if (webPort == port) {
 			throw new ServerConfigurationException("'webPort' and 'port' must not be equal");
 		}
 		this.webPort = webPort;
-		if (cacheTimeOutSec <= 0) {
-			throw new ServerConfigurationException("'cacheTimeOutSec' value must be positive");
-		}
-		this.cacheTimeOutSec = cacheTimeOutSec;
 
 		if (adminEmail != null) {
 			if (adminEmail.matches(RegularPatterns.EMAIL)) {
@@ -96,14 +89,11 @@ public class ServerConfigData {
 			this.adminEmail = adminEmail;
 		}
 
-		if (maxRetry <= 0) {
-			throw new ServerConfigurationException("'maxRetry' value must be positive");
+		if (maxBroadcastRetry <= 0) {
+			throw new ServerConfigurationException("'maxBroadcastRetry' value must be positive");
 		}
-		this.maxRetry = maxRetry;
+		this.maxBroadcastRetry = maxBroadcastRetry;
 
-		if (clientJarURL == null) {
-			Server.getLogger().log(Level.WARNING, "'clientJarURL' was not specified. This may occure troubles.");
-		}
 		this.clientJarURL = clientJarURL;
 		if (restServiceLogin == null) {
 			throw new ServerConfigurationException("'restServiceLogin' must not be null");
@@ -120,13 +110,14 @@ public class ServerConfigData {
 		this.redisHost = redisHost;
 	}
 
-	public ServerConfigData(JSONObject jsonObject) throws ServerConfigurationException {
+	public ServerConfig(JSONObject jsonObject) {
+
 		this(jsonObject.getInt("maxClients"), jsonObject.getInt("authTimeOutMillis"), jsonObject.getInt("rsaBitLength"),
 				jsonObject.getInt("port"), jsonObject.getInt("requestTimeOutMillis"),
 				jsonObject.getInt("heartBeatTimeOutMillis"), jsonObject.getInt("webPort"),
-				jsonObject.getInt("cacheTimeOutSec"), jsonObject.getString("adminEmail"), jsonObject.getInt("maxRetry"),
-				jsonObject.getString("clientJarURL"), jsonObject.getString("restServiceLogin"),
-				jsonObject.getString("restServicePassword"), jsonObject.getString("redisHost"));
+				jsonObject.getString("adminEmail"), jsonObject.getInt("maxBroadcastRetry"), jsonObject.getString("clientJarURL"),
+				jsonObject.getString("restServiceLogin"), jsonObject.getString("restServicePassword"),
+				jsonObject.getString("redisHost"));
 	}
 
 	public int getAuthTimeOutMillis() {
@@ -153,10 +144,6 @@ public class ServerConfigData {
 		return webPort;
 	}
 
-	public int getCacheTimeOutSec() {
-		return cacheTimeOutSec;
-	}
-
 	public int getMaxClients() {
 		return maxClients;
 	}
@@ -165,13 +152,13 @@ public class ServerConfigData {
 		return adminEmail;
 	}
 
-	public int getMaxRetry() {
-		return maxRetry;
+	public int getMaxBroadcastRetry() {
+		return maxBroadcastRetry;
 	}
 
 	public XMLServerConfigData toXML() {
 		return new XMLServerConfigData(maxClients, authTimeOutMillis, rsaBitLength, port, requestTimeOutMillis,
-				heartBeatTimeOutMillis, webPort, cacheTimeOutSec, adminEmail, maxRetry, clientJarURL);
+				heartBeatTimeOutMillis, webPort, adminEmail, maxBroadcastRetry, clientJarURL);
 	}
 
 	public String getClientJarURL() {
@@ -195,9 +182,20 @@ public class ServerConfigData {
 		return "ServerConfigData [maxClients=" + maxClients + ", authTimeOutMillis=" + authTimeOutMillis
 				+ ", rsaBitLength=" + rsaBitLength + ", port=" + port + ", adminEmail=" + adminEmail
 				+ ", requestTimeOutMillis=" + requestTimeOutMillis + ", heartBeatTimeOutMillis="
-				+ heartBeatTimeOutMillis + ", clientJarURL=" + clientJarURL + ", webPort=" + webPort + ", maxRetry="
-				+ maxRetry + ", cacheTimeOutSec=" + cacheTimeOutSec + ", restServiceLogin=" + restServiceLogin
+				+ heartBeatTimeOutMillis + ", clientJarURL=" + clientJarURL + ", webPort=" + webPort
+				+ ", maxBroadcastRetry=" + maxBroadcastRetry + ", restServiceLogin=" + restServiceLogin
 				+ ", restServicePassword=" + restServicePassword + ", redisHost=" + redisHost + "]";
+	}
+
+	public static void main(String[] args) {
+		// int maxClients, int authTimeOutMillis, int rsaBitLength, int port,
+		// int requestTimeOutMillis,
+		// int heartBeatTimeOutMillis, int webPort, String adminEmail, int
+		// maxRetry,
+		// String clientJarURL, String restServiceLogin, String
+		// restServicePassword, String redisHost
+		System.out.println(new JSONObject(new ServerConfig(50, 2000, 512, 1935, 45000, 30000, 1908, "babobka@bk.ru", 5,
+				"google.com", "login", "password", "127.0.0.1")));
 	}
 
 }

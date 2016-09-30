@@ -1,6 +1,6 @@
 package ru.babobka.nodeServer.exception;
 
-public class ServerConfigurationException  extends Exception {
+public class ServerConfigurationException  extends RuntimeException {
 
 	/**
 	 * 

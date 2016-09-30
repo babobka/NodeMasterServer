@@ -1,8 +1,8 @@
 package ru.babobka.nodeServer.model;
 
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
+import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
@@ -12,10 +12,10 @@ import ru.babobka.nodeServer.thread.ClientThread;
 
 public class ClientThreadsTest {
 
-	private final int maxSize = 10000;
+	private final int maxSize = 1000;
 	private final int maxThreads = 10;
 	private ClientThreads clientThreads;
-	private final ClientThread clientThreadMock = mock(ClientThread.class);
+	private final ClientThread clientThreadMock = new ClientThread(new Socket());
 
 	@Before
 	public void init() {
@@ -43,6 +43,13 @@ public class ClientThreadsTest {
 	}
 
 	@Test
+	public void testClear() {
+		clientThreads.add(clientThreadMock);
+		clientThreads.clear();
+		assertTrue(clientThreads.isEmpty());
+	}
+
+	@Test
 	public void testAddNull() {
 		assertFalse(clientThreads.add(null));
 	}
@@ -55,6 +62,7 @@ public class ClientThreadsTest {
 	@Test
 	public void testRemove() {
 		clientThreads.add(clientThreadMock);
+		assertFalse(clientThreads.isEmpty());
 		assertTrue(clientThreads.remove(clientThreadMock));
 		assertTrue(clientThreads.isEmpty());
 	}

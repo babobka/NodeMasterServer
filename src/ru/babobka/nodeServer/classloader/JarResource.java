@@ -18,7 +18,7 @@ import java.util.zip.ZipInputStream;
  * JarResources: JarResources maps all resources included in a Zip or Jar file.
  * Additionaly, it provides a method to extract one as a blob.
  */
-public final class JarResource {
+final class JarResource {
 
 	// external debug flag
 	private boolean debugOn = false;

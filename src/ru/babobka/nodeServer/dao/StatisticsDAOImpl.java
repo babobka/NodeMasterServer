@@ -3,8 +3,9 @@ package ru.babobka.nodeServer.dao;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
-import ru.babobka.nodeServer.Server;
+
 import ru.babobka.nodeServer.datasource.RedisDatasource;
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.util.DateUtil;
 
 public class StatisticsDAOImpl implements StatisticsDAO {
@@ -52,7 +53,7 @@ public class StatisticsDAOImpl implements StatisticsDAO {
 			}
 			t.exec();
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 			if (t != null) {
 				t.discard();
 			}

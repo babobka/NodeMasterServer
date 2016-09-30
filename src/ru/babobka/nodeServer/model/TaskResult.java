@@ -12,7 +12,7 @@ public class TaskResult {
 
 	private final String message;
 
-	public TaskResult(Long timeTakes, Map<String, Serializable> resultMap, String message) {
+	private TaskResult(Long timeTakes, Map<String, Serializable> resultMap, String message) {
 		super();
 		this.timeTakes = timeTakes;
 		if (resultMap != null) {

@@ -19,14 +19,14 @@ import java.util.Hashtable;
  * @author Jack Harich - 8/18/97
  * @author John D. Mitchell - 99.03.04
  */
-public abstract class MultiClassLoader extends ClassLoader {
+abstract class MultiClassLoader extends ClassLoader {
 
 	// ---------- Fields --------------------------------------
 	private Hashtable<String, Class<?>> classes = new Hashtable<String, Class<?>>();
 	private char classNameReplacementChar;
 
-	protected boolean monitorOn = false;
-	protected boolean sourceMonitorOn = true;
+	private boolean monitorOn = false;
+	private boolean sourceMonitorOn = true;
 
 	// ---------- Initialization ------------------------------
 	public MultiClassLoader() {

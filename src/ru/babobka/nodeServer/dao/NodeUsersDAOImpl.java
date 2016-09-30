@@ -9,8 +9,9 @@ import java.util.logging.Level;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
-import ru.babobka.nodeServer.Server;
+
 import ru.babobka.nodeServer.datasource.RedisDatasource;
+import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.model.User;
 
 public class NodeUsersDAOImpl implements NodeUsersDAO {
@@ -53,7 +54,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				return Integer.parseInt(value);
 			}
 		} catch (Exception e) {
-			Server.getLogger().log(Level.SEVERE, e);
+			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 		} finally {
 			if (jedis != null)
 				jedis.close();
@@ -78,7 +79,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 
 			return new User(login, hashedPassword, taskCount, email);
 		} catch (Exception e) {
-			Server.getLogger().log(Level.SEVERE, e);
+			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 		} finally {
 			if (jedis != null)
 				jedis.close();
@@ -107,7 +108,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				users.add(get(entry.getKey(), Integer.parseInt(entry.getValue())));
 			}
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 		} finally {
 			if (jedis != null)
 				jedis.close();
@@ -139,7 +140,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			t.exec();
 			return true;
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 			if (t != null) {
 				t.discard();
 			}
@@ -166,7 +167,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			}
 			return true;
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 			if (t != null) {
 				t.discard();
 			}
@@ -202,7 +203,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				return true;
 			}
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 		} finally {
 			if (jedis != null)
 				jedis.close();
@@ -221,7 +222,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				return true;
 			}
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 		} finally {
 			if (jedis != null)
 				jedis.close();
@@ -239,7 +240,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				return true;
 			}
 		} catch (Exception e) {
-			Server.getLogger().log(e);
+			ServerContext.getInstance().getLogger().log(e);
 		} finally {
 			if (jedis != null)
 				jedis.close();

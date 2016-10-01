@@ -1,7 +1,5 @@
 package ru.babobka.nodeServer.util;
 
-import ru.babobka.nodeServer.classloader.JarClassLoader;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -18,6 +16,8 @@ import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
 
+import ru.babobka.nodeServer.classloader.JarClassLoader;
+
 /**
  * Created by dolgopolov.a on 08.07.15.
  */
@@ -28,9 +28,8 @@ public final class StreamUtil {
 
 	}
 
-	public static String readFile(String filename) {
+	public static String readFile(File file) {
 		String content = null;
-		File file = new File(filename);
 		FileReader reader = null;
 		try {
 			reader = new FileReader(file);
@@ -52,13 +51,17 @@ public final class StreamUtil {
 		return content;
 	}
 
-	public static List<String> getFileListFromFolder(String folderPath) {
+	public static String readFile(String filePath) {
+		return readFile(new File(filePath));
+	}
+
+	public static List<String> getJarFileListFromFolder(String folderPath) {
 		File folder = new File(folderPath);
 		File[] listOfFiles = folder.listFiles();
 		LinkedList<String> files = new LinkedList<>();
 		if (listOfFiles != null) {
 			for (int i = 0; i < listOfFiles.length; i++) {
-				if (listOfFiles[i].isFile()) {
+				if (listOfFiles[i].isFile() && listOfFiles[i].getAbsolutePath().endsWith(".jar")) {
 					files.add(listOfFiles[i].getName());
 				}
 			}

@@ -1,11 +1,10 @@
-package ru.babobka.nodeServer.runnable;
+package ru.babobka.nodeServer.thread;
 
 /**
  * Created by dolgopolov.a on 31.07.15.
  */
 
 import ru.babobka.nodeServer.model.ServerContext;
-import ru.babobka.nodeServer.thread.ClientThread;
 
 import java.io.IOException;
 import java.net.ServerSocket;

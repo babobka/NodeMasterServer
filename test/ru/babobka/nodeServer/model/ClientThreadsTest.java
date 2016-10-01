@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.net.Socket;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,8 +19,13 @@ public class ClientThreadsTest {
 	private final ClientThread clientThreadMock = new ClientThread(new Socket());
 
 	@Before
-	public void init() {
+	public void setUp() {
 		clientThreads = new ClientThreads(maxSize);
+	}
+
+	@After
+	public void tearDown() {
+		clientThreads.clear();
 	}
 
 	@Test

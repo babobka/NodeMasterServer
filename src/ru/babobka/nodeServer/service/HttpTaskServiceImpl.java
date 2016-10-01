@@ -68,7 +68,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 			ServerContext.getInstance().getResponseStorage().put(taskId,
 					new ResponsesArray(currentClusterSize, task.getTaskName(), task, arguments));
 			NodeRequest[] requests = task.getDistributor().distribute(arguments, currentClusterSize, taskId);
-			DistributionUtil.broadcastRequests(task.getTaskName(), requests, 0, ServerContext.getInstance().getConfig().getMaxBroadcastRetry());
+			DistributionUtil.broadcastRequests(task.getTaskName(), requests);
 		}
 
 	}
@@ -93,7 +93,8 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 			} catch (DistributionException e) {
 				ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 				try {
-					DistributionUtil.broadcastStopRequests(ServerContext.getInstance().getClientThreads().getListByTaskId(taskId),
+					DistributionUtil.broadcastStopRequests(
+							ServerContext.getInstance().getClientThreads().getListByTaskId(taskId),
 							new NodeRequest(taskId, true, requestUri));
 				} catch (EmptyClusterException e1) {
 					ServerContext.getInstance().getLogger().log(e1);

@@ -9,19 +9,19 @@ public class ServerTest {
 
 	@After
 	public void tearDown() {
-		Server.getInstance().stop();
+		MasterServer.getInstance().stop();
 	}
 
 	@Test
 	public void testRun() {
-		Server server = Server.getInstance();
+		MasterServer server = MasterServer.getInstance();
 		server.run();
 		assertTrue(server.isRunning());
 	}
 
 	@Test
 	public void testMultipleRunStop() {
-		Server server = Server.getInstance();
+		MasterServer server = MasterServer.getInstance();
 		for (int i = 0; i < 5; i++) {
 			server.run();
 			assertTrue(server.isRunning());
@@ -34,7 +34,7 @@ public class ServerTest {
 
 	@Test
 	public void testDoubleRun() {
-		Server server = Server.getInstance();
+		MasterServer server = MasterServer.getInstance();
 		server.run();
 		server.run();
 		assertTrue(server.isRunning());
@@ -42,7 +42,7 @@ public class ServerTest {
 
 	@Test
 	public void testStop() {
-		Server server = Server.getInstance();
+		MasterServer server = MasterServer.getInstance();
 		server.run();
 		assertTrue(server.isRunning());
 		assertFalse(server.isStopped());

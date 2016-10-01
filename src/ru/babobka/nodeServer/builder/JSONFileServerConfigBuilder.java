@@ -2,29 +2,30 @@ package ru.babobka.nodeServer.builder;
 
 import java.io.File;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import ru.babobka.nodeServer.exception.ServerConfigurationException;
 import ru.babobka.nodeServer.model.ServerConfig;
 import ru.babobka.nodeServer.util.StreamUtil;
 
-public interface JSONFileServerConfigBuilder {
+public class JSONFileServerConfigBuilder {
 
-	public static ServerConfig build(String runningFolder) throws ServerConfigurationException {
-		String configFilePath = runningFolder + File.separator + "config" + File.separator + "config.json";
-		File jsonFile = new File(configFilePath);
-		if (jsonFile.exists()) {
-			try {
-				return new ServerConfig(new JSONObject(StreamUtil.readFile(configFilePath)));
+	private JSONFileServerConfigBuilder() {
 
-			} catch (JSONException e) {
-				throw new ServerConfigurationException(
-						"Can not build server configuration using file " + configFilePath, e);
-			}
-		} else {
-			throw new ServerConfigurationException(
-					"Can not find config file " + configFilePath + ". Redownload this file or create your own.");
-		}
 	}
+
+	public static ServerConfig build() {
+		File jsonFile = new File(
+				JSONFileServerConfigBuilder.class.getClassLoader().getResource("config/config.json").getFile());
+
+		try {
+			return new ServerConfig(new JSONObject(StreamUtil.readFile(jsonFile)));
+
+		} catch (Exception e) {
+			throw new ServerConfigurationException(
+					"Can not build server configuration using file " + jsonFile.getAbsolutePath(), e);
+		}
+
+	}
+
 }

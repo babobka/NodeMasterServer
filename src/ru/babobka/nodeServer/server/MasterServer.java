@@ -9,13 +9,12 @@ import ru.babobka.nodeServer.model.ClientThreads;
 import ru.babobka.nodeServer.model.ServerContext;
 import ru.babobka.nodeServer.pool.FactoryPool;
 import ru.babobka.nodeServer.runnable.HeartBeatingRunnable;
-import ru.babobka.nodeServer.runnable.InputListenerThread;
+import ru.babobka.nodeServer.thread.InputListenerThread;
 import ru.babobka.nodeServer.webController.AuthWebFilter;
 import ru.babobka.nodeServer.webController.AvailableTasksWebController;
 import ru.babobka.nodeServer.webController.CacheWebFilter;
 import ru.babobka.nodeServer.webController.CancelTaskWebController;
 import ru.babobka.nodeServer.webController.ClusterInfoWebController;
-import ru.babobka.nodeServer.webController.MainPageWebController;
 import ru.babobka.nodeServer.webController.NodeUsersCRUDWebController;
 import ru.babobka.nodeServer.webController.StatisticsWebFilter;
 import ru.babobka.nodeServer.webController.TaskWebController;
@@ -26,7 +25,7 @@ import ru.babobka.vsjws.webserver.WebServer;
 /**
  * Created by dolgopolov.a on 16.07.15.
  */
-public final class Server {
+public final class MasterServer {
 
 	static {
 		TimeZone.setDefault(TimeZone.getTimeZone("GMT+3"));
@@ -44,23 +43,23 @@ public final class Server {
 
 	private volatile Thread runThread;
 
-	private static volatile Server instance;
+	private static volatile MasterServer instance;
 
 	private volatile boolean starting;
 
 	private volatile boolean stopping;
 
-	private Server() {
+	private MasterServer() {
 
 	}
 
-	public static Server getInstance() {
-		Server localInstance = instance;
+	public static MasterServer getInstance() {
+		MasterServer localInstance = instance;
 		if (localInstance == null) {
-			synchronized (Server.class) {
+			synchronized (MasterServer.class) {
 				localInstance = instance;
 				if (localInstance == null) {
-					instance = localInstance = new Server();
+					instance = localInstance = new MasterServer();
 				}
 			}
 		}
@@ -77,7 +76,8 @@ public final class Server {
 						try {
 							runThread.join();
 						} catch (InterruptedException e) {
-							e.printStackTrace();
+							runThread.interrupt();
+							ServerContext.getInstance().getLogger().log(e);
 						}
 					}
 					runThread = new Thread(new Runnable() {
@@ -87,7 +87,7 @@ public final class Server {
 							try {
 								runBlocking();
 							} catch (Exception e) {
-								e.printStackTrace();
+								ServerContext.getInstance().getLogger().log(e);
 								stop();
 								running = false;
 							}
@@ -104,14 +104,13 @@ public final class Server {
 		ServerContext.getInstance().getLogger().log("NodeServer runBlocking");
 		try {
 			factoryPool.init();
-			listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getPort());
+			listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getMainServerPort());
 			heartBeatingThread = new Thread(new HeartBeatingRunnable());
 			listenerThread.start();
 			heartBeatingThread.start();
 			ServerContext.getInstance().getLogger().log(Level.INFO, "Node server start");
-			webServer = new WebServer("rest server", ServerContext.getInstance().getConfig().getWebPort(),
-					ServerContext.getInstance().getRunningFolder() + File.separator + "web-content",
-					ServerContext.getInstance().getRunningFolder() + File.separator + "rest_log");
+			webServer = new WebServer("rest server", ServerContext.getInstance().getConfig().getWebPort(), null,
+					ServerContext.getInstance().getConfig().getLoggerFolder() + File.separator + "rest_log");
 			WebFilter authWebFilter = new AuthWebFilter();
 			WebFilter cacheWebFilter = new CacheWebFilter();
 			WebFilter statisticsWebFilter = new StatisticsWebFilter();
@@ -125,7 +124,6 @@ public final class Server {
 			webServer.addController("users", new NodeUsersCRUDWebController().addWebFilter(authWebFilter));
 			webServer.addController("tasksInfo", new TasksInfoWebController().addWebFilter(authWebFilter));
 			webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
-			webServer.addController("", new MainPageWebController());
 			webServer.run();
 			running = true;
 		} catch (Exception e) {
@@ -152,6 +150,7 @@ public final class Server {
 			try {
 				localListenerThread.join();
 			} catch (InterruptedException e) {
+				localListenerThread.interrupt();
 				ServerContext.getInstance().getLogger().log(e);
 			}
 		}
@@ -161,7 +160,9 @@ public final class Server {
 			try {
 				localHeartBeatingThread.join();
 			} catch (InterruptedException e) {
+				localHeartBeatingThread.interrupt();
 				ServerContext.getInstance().getLogger().log(e);
+
 			}
 		}
 		ClientThreads clientThreads = ServerContext.getInstance().getClientThreads();
@@ -175,7 +176,6 @@ public final class Server {
 		while (starting) {
 			Thread.yield();
 		}
-
 		if (running) {
 			synchronized (this) {
 				if (running) {
@@ -205,21 +205,23 @@ public final class Server {
 		WebServer localWebServer = webServer;
 		Thread localListenerThread = listenerThread;
 		Thread localHeartBeatingThread = heartBeatingThread;
-		boolean listenerThreadIsInterrupted = localListenerThread == null || !localListenerThread.isAlive();
-		boolean heartBeatingThreadInterrupted = localHeartBeatingThread == null || !localHeartBeatingThread.isAlive();
+		boolean listenerThreadIsNotAlive = localListenerThread == null || !localListenerThread.isAlive();
+		boolean heartBeatingThreadNotAlive = localHeartBeatingThread == null || !localHeartBeatingThread.isAlive();
 		boolean webServerIsStopped = localWebServer == null || !localWebServer.isRunning();
-		boolean clientThreadsAreInterrupted = true;
+		boolean clientThreadsAreNotAlive = true;
 		ClientThreads clientThreads = ServerContext.getInstance().getClientThreads();
 		if (clientThreads != null) {
-			clientThreadsAreInterrupted = clientThreads.isEmpty();
+			clientThreadsAreNotAlive = clientThreads.isEmpty();
 		}
-		return !running && heartBeatingThreadInterrupted && factoryPool.isEmpty() && listenerThreadIsInterrupted
-				&& webServerIsStopped && clientThreadsAreInterrupted;
+		boolean allThreadsAreNotAlive = heartBeatingThreadNotAlive && listenerThreadIsNotAlive
+				&& clientThreadsAreNotAlive;
+		return !running && factoryPool.isEmpty() && allThreadsAreNotAlive && webServerIsStopped;
 	}
 
 	public static void main(String[] args) {
-		Server server = new Server();
+		MasterServer server = new MasterServer();
 		server.run();
+		
 	}
 
 }

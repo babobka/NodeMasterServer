@@ -15,12 +15,13 @@ import ru.babobka.nodeserials.NodeRequest;
 
 public final class DistributionUtil {
 
+	private static final int MAX_RETRY = 5;
+
 	private DistributionUtil() {
 
 	}
 
-	public static void redistribute(ClientThread clientThread, int maxBroadcastRetry)
-			throws DistributionException, EmptyClusterException {
+	public static void redistribute(ClientThread clientThread) throws DistributionException, EmptyClusterException {
 
 		if (clientThread.getRequestMap().size() > 0) {
 			if (!ServerContext.getInstance().getClientThreads().isEmpty()) {
@@ -28,7 +29,7 @@ public final class DistributionUtil {
 				Map<String, LinkedList<NodeRequest>> requestsByUri = clientThread.getRequestsGroupedByTask();
 				for (Map.Entry<String, LinkedList<NodeRequest>> requestByUriEntry : requestsByUri.entrySet()) {
 					try {
-						broadcastRequests(requestByUriEntry.getKey(), requestByUriEntry.getValue(), maxBroadcastRetry);
+						broadcastRequests(requestByUriEntry.getKey(), requestByUriEntry.getValue(), MAX_RETRY);
 					} catch (Exception e) {
 						ServerContext.getInstance().getLogger().log(Level.SEVERE, "Redistribution failed");
 						throw new DistributionException(e);
@@ -53,11 +54,12 @@ public final class DistributionUtil {
 		broadcastRequests(taskName, requestArray, 0, maxBroadcastRetry);
 	}
 
-	public static void broadcastRequests(String taskName, NodeRequest[] requests, int maxRetry) throws EmptyClusterException, DistributionException {
-		broadcastRequests(taskName, requests, 0, maxRetry);
+	public static void broadcastRequests(String taskName, NodeRequest[] requests)
+			throws EmptyClusterException, DistributionException {
+		broadcastRequests(taskName, requests, 0, MAX_RETRY);
 	}
 
-	public static void broadcastRequests(String taskName, NodeRequest[] requests, int retry, int maxRetry)
+	private static void broadcastRequests(String taskName, NodeRequest[] requests, int retry, int maxRetry)
 			throws EmptyClusterException, DistributionException {
 		List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads().getList(taskName);
 		if (clientThreads.isEmpty()) {

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+import ru.babobka.nodeServer.builder.JSONFileServerConfigBuilder;
 import ru.babobka.nodeServer.exception.CanNotInitTaskFactoryException;
 import ru.babobka.nodeServer.exception.EmptyFactoryPoolException;
 import ru.babobka.nodeServer.model.ServerContext;
@@ -40,19 +41,22 @@ public class FactoryPool {
 		return localInstance;
 	}
 
-	public synchronized void init() throws CanNotInitTaskFactoryException, EmptyFactoryPoolException {
+	public synchronized void init() throws CanNotInitTaskFactoryException {
 		try {
-			String taskFolder = ServerContext.getInstance().getRunningFolder() + File.separator + "tasks";
-			List<String> files = StreamUtil.getFileListFromFolder(taskFolder);
+			File tasksFolder = new File(ServerContext.getInstance().getConfig().getTasksFolder());
+			String taskFolder = tasksFolder.getAbsolutePath();
+			List<String> files = StreamUtil.getJarFileListFromFolder(taskFolder);
 			for (String file : files) {
 				try {
+
 					Class<?> clazz = StreamUtil.getTaskClassFromJar(taskFolder + File.separator + file);
 					SubTask subTask = (SubTask) clazz.newInstance();
 					poolMap.put(subTask.getTaskName(), clazz);
 					availableTasks.put(subTask.getTaskName(), subTask.getDescription());
 				} catch (Exception e) {
-					ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
-					ServerContext.getInstance().getLogger().log(Level.SEVERE, "Can not init factoryPool");
+					ServerContext.getInstance().getLogger().log(Level.SEVERE, "Can not init factory with file " + file);
+					ServerContext.getInstance().getLogger().log(e);
+					throw new CanNotInitTaskFactoryException(e);
 				}
 			}
 
@@ -61,8 +65,8 @@ public class FactoryPool {
 					"Can not init factory pool. Try to redownload new jars to nodeserver task folder", e);
 		}
 		if (poolMap.isEmpty()) {
-			throw new EmptyFactoryPoolException(
-					"Can not init factory pool. No task to run. Try to redownload new jars to nodeserver task folder");
+			throw new CanNotInitTaskFactoryException(new EmptyFactoryPoolException(
+					"Can not init factory pool. No task to run. Try to redownload new jars to nodeserver task folder"));
 		}
 
 	}

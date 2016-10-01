@@ -33,6 +33,8 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 
 	private volatile Set<String> taskSet;
 
+	private static final int RSA_KEY_BIT_LENGTH = 512;
+
 	private final NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
 	private final AuthService authService = AuthServiceImpl.getInstance();
@@ -50,7 +52,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			this.setName("Client Thread " + new Date());
 			ServerContext.getInstance().getLogger().log(Level.INFO, "New connection " + socket);
 			this.socket = socket;
-			this.rsa = new RSA(ServerContext.getInstance().getConfig().getRsaBitLength());
+			this.rsa = new RSA(RSA_KEY_BIT_LENGTH);
 		} else {
 			throw new IllegalArgumentException("Socket can not be null");
 		}
@@ -183,8 +185,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			synchronized (REDISTRIBUTION_LOCK) {
 				if (!requestMap.isEmpty()) {
 					try {
-						DistributionUtil.redistribute(this,
-								ServerContext.getInstance().getConfig().getMaxBroadcastRetry());
+						DistributionUtil.redistribute(this);
 					} catch (DistributionException e) {
 						ServerContext.getInstance().getLogger().log(e);
 						setBadAndCancelAllTheRequests();

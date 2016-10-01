@@ -1,9 +1,7 @@
 package ru.babobka.nodeServer.classloader;
 
-/**
- * Created by dolgopolov.a on 12.12.15.
- */
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A simple test class loader capable of loading from multiple sources, such as
@@ -22,11 +20,8 @@ import java.util.Hashtable;
 abstract class MultiClassLoader extends ClassLoader {
 
 	// ---------- Fields --------------------------------------
-	private Hashtable<String, Class<?>> classes = new Hashtable<String, Class<?>>();
+	private Map<String, Class<?>> classes = new HashMap<>();
 	private char classNameReplacementChar;
-
-	private boolean monitorOn = false;
-	private boolean sourceMonitorOn = true;
 
 	// ---------- Initialization ------------------------------
 	public MultiClassLoader() {
@@ -37,33 +32,31 @@ abstract class MultiClassLoader extends ClassLoader {
 	 * This is a simple version for external clients since they will always want
 	 * the class resolved before it is returned to them.
 	 */
+	@Override
 	public Class<?> loadClass(String className) throws ClassNotFoundException {
 		return (loadClass(className, true));
 	}
 
 	// ---------- Abstract Implementation ---------------------
-	public synchronized Class<?> loadClass(String className, boolean resolveIt)
-			throws ClassNotFoundException {
+	@Override
+	public synchronized Class<?> loadClass(String className, boolean resolveIt) throws ClassNotFoundException {
 
 		Class<?> result;
 		byte[] classBytes;
-		monitor(">> MultiClassLoader.loadClass(" + className + ", " + resolveIt
-				+ ")");
 
 		// ----- Check our local cache of classes
-		result = (Class<?>) classes.get(className);
+		result = classes.get(className);
 		if (result != null) {
-			monitor(">> returning cached result.");
+
 			return result;
 		}
 
 		// ----- Check with the primordial class loader
 		try {
 			result = super.findSystemClass(className);
-			monitor(">> returning system class (in CLASSPATH).");
 			return result;
 		} catch (ClassNotFoundException e) {
-			monitor(">> Not a system class.");
+			//e.printStackTrace();
 		}
 
 		// ----- Try to load it from preferred source
@@ -85,7 +78,6 @@ abstract class MultiClassLoader extends ClassLoader {
 
 		// Done
 		classes.put(className, result);
-		monitor(">> Returning newly loaded class.");
 		return result;
 	}
 
@@ -113,14 +105,4 @@ abstract class MultiClassLoader extends ClassLoader {
 		}
 	}
 
-	protected void monitor(String text) {
-		if (monitorOn)
-			print(text);
-	}
-
-	// --- Std
-	protected static void print(String text) {
-		System.out.println(text);
-	}
-
-} // End class
+}

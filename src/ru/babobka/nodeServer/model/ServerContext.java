@@ -2,7 +2,6 @@ package ru.babobka.nodeServer.model;
 
 import ru.babobka.nodeServer.builder.JSONFileServerConfigBuilder;
 
-import ru.babobka.nodeServer.util.StreamUtil;
 import ru.babobka.vsjsw.logger.SimpleLogger;
 
 public class ServerContext {
@@ -10,8 +9,6 @@ public class ServerContext {
 	private final ServerConfig config;
 
 	private final SimpleLogger logger;
-
-	private final String runningFolder;
 
 	private final ClientThreads clientThreads;
 
@@ -21,9 +18,8 @@ public class ServerContext {
 
 	private ServerContext() {
 		try {
-			runningFolder = StreamUtil.getRunningFolder();
-			config = JSONFileServerConfigBuilder.build(runningFolder);
-			logger = new SimpleLogger("NodeServer", runningFolder, "server");
+			config = JSONFileServerConfigBuilder.build();
+			logger = new SimpleLogger("NodeServer", config.getLoggerFolder(), "server");
 			responseStorage = new ResponseStorage();
 			clientThreads = new ClientThreads(config.getMaxClients());
 			logger.log("ServerContext was successfuly created");
@@ -56,9 +52,6 @@ public class ServerContext {
 		return logger;
 	}
 
-	public String getRunningFolder() {
-		return runningFolder;
-	}
 
 	public ClientThreads getClientThreads() {
 		return clientThreads;

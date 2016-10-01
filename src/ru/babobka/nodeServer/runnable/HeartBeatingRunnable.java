@@ -26,6 +26,7 @@ public class HeartBeatingRunnable implements Runnable {
 					}
 				}
 			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 				ServerContext.getInstance().getLogger().log(Level.WARNING, e);
 				break;
 			}

@@ -13,7 +13,7 @@ import java.util.logging.Level;
 import ru.babobka.nodemasterserver.exception.DistributionException;
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
 import ru.babobka.nodemasterserver.model.AuthResult;
-import ru.babobka.nodemasterserver.model.ServerContext;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.service.AuthService;
 import ru.babobka.nodemasterserver.service.AuthServiceImpl;
 import ru.babobka.nodemasterserver.service.NodeUsersService;

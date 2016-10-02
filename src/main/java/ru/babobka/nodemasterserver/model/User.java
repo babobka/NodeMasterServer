@@ -1,6 +1,6 @@
 package ru.babobka.nodemasterserver.model;
 
-import java.math.BigInteger;
+import java.util.Arrays;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,16 +16,15 @@ public class User {
 
 	private final String name;
 
-	private final BigInteger hashedPassword;
+	private final byte[] hashedPassword;
 
-	private final Integer taskCount;
+	private final int taskCount;
 
 	private final String email;
 
 	private final Integer id;
 
-	public User(String name, BigInteger password, Integer taskCount,
-			String email) throws InvalidUserException {
+	public User(String name, byte[] hashedPassword, int taskCount, String email) throws InvalidUserException {
 		super();
 		if (name != null) {
 			this.name = name;
@@ -33,8 +32,8 @@ public class User {
 			throw new InvalidUserException("'name' must be set");
 		}
 
-		if (password != null) {
-			this.hashedPassword = password.abs();
+		if (hashedPassword != null && hashedPassword.length > 0) {
+			this.hashedPassword = hashedPassword;
 		} else {
 			throw new InvalidUserException("'password' must be set");
 		}
@@ -46,20 +45,17 @@ public class User {
 		} else {
 			this.email = null;
 		}
-		if (taskCount != null) {
-			if (taskCount < 0) {
-				throw new InvalidUserException("'taskCount' is negative");
-			}
-			this.taskCount = taskCount;
-		} else {
-			this.taskCount = null;
+
+		if (taskCount < 0) {
+			throw new InvalidUserException("'taskCount' is negative");
 		}
+		this.taskCount = taskCount;
+
 		this.id = hash(this.name);
 	}
-	
-	public User(String name, String password, Integer taskCount,
-			String email) throws InvalidUserException{
-		this(name, new BigInteger(MathUtil.sha2(password)),taskCount, email);
+
+	public User(String name, String password, Integer taskCount, String email) throws InvalidUserException {
+		this(name, MathUtil.sha2(password), taskCount, email);
 	}
 
 	public static User fromJson(JSONObject json) throws InvalidUserException {
@@ -91,7 +87,7 @@ public class User {
 		return email;
 	}
 
-	public BigInteger getHashedPassword() {
+	public byte[] getHashedPassword() {
 		return hashedPassword;
 	}
 
@@ -105,6 +101,53 @@ public class User {
 
 	public Integer getId() {
 		return id;
+	}
+
+
+
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((email == null) ? 0 : email.hashCode());
+		result = prime * result + Arrays.hashCode(hashedPassword);
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + taskCount;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		User other = (User) obj;
+		if (email == null) {
+			if (other.email != null)
+				return false;
+		} else if (!email.equals(other.email))
+			return false;
+		if (!Arrays.equals(hashedPassword, other.hashedPassword))
+			return false;
+		if (id == null) {
+			if (other.id != null)
+				return false;
+		} else if (!id.equals(other.id))
+			return false;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		if (taskCount != other.taskCount)
+			return false;
+		return true;
 	}
 
 	private static int hash(String s) {

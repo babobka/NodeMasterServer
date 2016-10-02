@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 
-import ru.babobka.nodemasterserver.model.ServerContext;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.thread.ClientThread;
 
 public class HeartBeatingRunnable implements Runnable {

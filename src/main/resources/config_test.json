@@ -1,0 +1,1 @@
+{"maxClients":50,"restServicePassword":"restServicePassword","restServiceLogin":"login","loggerFolder":"/Users/bbk/Documents/nodes/log","authTimeOutMillis":2000,"tasksFolder":"/Users/bbk/Documents/nodes/tasks/","requestTimeOutMillis":45000,"heartBeatTimeOutMillis":30000,"mainServerPort":1918,"webPort":2512}

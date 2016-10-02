@@ -1,14 +1,10 @@
 package ru.babobka.nodemasterserver.thread;
 
-/**
- * Created by dolgopolov.a on 31.07.15.
- */
-
-import ru.babobka.nodemasterserver.model.ServerContext;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import ru.babobka.nodemasterserver.server.ServerContext;
 
 /**
  * Created by dolgopolov.a on 27.07.15.

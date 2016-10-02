@@ -2,7 +2,6 @@ package ru.babobka.nodemasterserver.service;
 
 import java.util.List;
 
-import ru.babobka.nodemasterserver.exception.UserAlreadyExistsException;
 import ru.babobka.nodemasterserver.model.User;
 
 public interface NodeUsersService {
@@ -13,7 +12,7 @@ public interface NodeUsersService {
 
 	boolean remove(String userName);
 
-	boolean add(User user) throws UserAlreadyExistsException;
+	boolean add(User user);
 
 	boolean incrementTaskCount(String login);
 

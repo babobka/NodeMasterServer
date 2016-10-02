@@ -1,11 +1,9 @@
-package ru.babobka.nodemasterserver.model;
+package ru.babobka.nodemasterserver.server;
 
 import java.io.File;
-import java.net.URISyntaxException;
 
 import org.json.JSONObject;
 import ru.babobka.nodemasterserver.exception.ServerConfigurationException;
-import ru.babobka.nodemasterserver.util.StreamUtil;
 
 public class ServerConfig {
 

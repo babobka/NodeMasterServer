@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.TimeZone;
 
 import ru.babobka.nodemasterserver.model.ClientThreads;
-import ru.babobka.nodemasterserver.model.ServerContext;
 import ru.babobka.nodemasterserver.pool.FactoryPool;
 import ru.babobka.nodemasterserver.runnable.HeartBeatingRunnable;
 import ru.babobka.nodemasterserver.thread.InputListenerThread;
@@ -38,6 +37,8 @@ public final class MasterServer {
 	private volatile Thread listenerThread;
 
 	private volatile WebServer webServer;
+
+	private volatile WebServerExecutor webServerExecutor;
 
 	private volatile boolean running;
 
@@ -81,8 +82,8 @@ public final class MasterServer {
 			webServer.addController("users", new NodeUsersCRUDWebController().addWebFilter(authWebFilter));
 			webServer.addController("tasksInfo", new TasksInfoWebController().addWebFilter(authWebFilter));
 			webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
-			WebServerExecutor executor = new WebServerExecutor(webServer);
-			executor.run();
+			webServerExecutor = new WebServerExecutor(webServer);
+			webServerExecutor.run();
 			running = true;
 		} catch (Exception e) {
 			running = false;
@@ -94,10 +95,9 @@ public final class MasterServer {
 
 	void stop() {
 		factoryPool.clear();
-		WebServer localWebServer = webServer;
-		if (localWebServer != null) {
-			WebServerExecutor executor = new WebServerExecutor(localWebServer);
-			executor.stop();
+		WebServerExecutor localWebServerExecutor = webServerExecutor;
+		if (localWebServerExecutor != null) {
+			localWebServerExecutor.stop();
 		}
 
 		Thread localListenerThread = listenerThread;

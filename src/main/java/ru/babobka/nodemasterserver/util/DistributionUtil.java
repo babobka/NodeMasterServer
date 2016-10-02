@@ -9,7 +9,7 @@ import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.exception.DistributionException;
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
-import ru.babobka.nodemasterserver.model.ServerContext;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.thread.ClientThread;
 import ru.babobka.nodeserials.NodeRequest;
 

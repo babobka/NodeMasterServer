@@ -2,6 +2,7 @@ package ru.babobka.nodemasterserver.model;
 
 
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.thread.ClientThread;
 import ru.babobka.nodemasterserver.util.DistributionUtil;
 import ru.babobka.nodeserials.NodeRequest;

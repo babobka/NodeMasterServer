@@ -1,6 +1,5 @@
 package ru.babobka.nodemasterserver.dao;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,8 +10,9 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
-import ru.babobka.nodemasterserver.model.ServerContext;
 import ru.babobka.nodemasterserver.model.User;
+import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.util.MathUtil;
 
 public class NodeUsersDAOImpl implements NodeUsersDAO {
 
@@ -75,7 +75,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			if (map.get(TASK_COUNT) != null) {
 				taskCount = Integer.parseInt(new String(map.get(TASK_COUNT)));
 			}
-			BigInteger hashedPassword = new BigInteger(map.get(HASHED_PASSWORD));
+			byte[] hashedPassword = map.get(HASHED_PASSWORD);
 
 			return new User(login, hashedPassword, taskCount, email);
 		} catch (Exception e) {
@@ -127,7 +127,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			if (user.getEmail() != null) {
 				userMap.put(EMAIL, user.getEmail().getBytes());
 			}
-			userMap.put(HASHED_PASSWORD, user.getHashedPassword().abs().toByteArray());
+			userMap.put(HASHED_PASSWORD, user.getHashedPassword());
 			if (user.getTaskCount() != null) {
 				userMap.put(TASK_COUNT, String.valueOf(user.getTaskCount()).getBytes());
 			}
@@ -179,13 +179,13 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 	}
 
 	@Override
-	public boolean update(String login, String newLogin, BigInteger hashedPassword, String email, Integer taskCount) {
+	public boolean update(String login, String newLogin, String password, String email, Integer taskCount) {
 		Jedis jedis = null;
 		try {
 			jedis = RedisDatasource.getInstance().getPool().getResource();
 			Integer userId = getUserId(login);
 			if (userId != null) {
-				if (!newLogin.equals(login)) {
+				if (newLogin!=null && !newLogin.equals(login)) {
 					jedis.hdel(USERS_KEY, login);
 					jedis.hset(USERS_KEY, login, String.valueOf(userId));
 				}
@@ -193,8 +193,8 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				if (email != null) {
 					map.put(EMAIL, email.getBytes());
 				}
-				if (hashedPassword != null) {
-					map.put(HASHED_PASSWORD, hashedPassword.abs().toByteArray());
+				if (password != null) {
+					map.put(HASHED_PASSWORD, MathUtil.sha2(password));
 				}
 				if (taskCount != null) {
 					map.put(TASK_COUNT, String.valueOf(taskCount).getBytes());

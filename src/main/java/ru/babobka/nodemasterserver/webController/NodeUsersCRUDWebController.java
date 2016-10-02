@@ -5,7 +5,6 @@ import org.json.JSONObject;
 
 import ru.babobka.nodemasterserver.constant.RegularPatterns;
 import ru.babobka.nodemasterserver.exception.InvalidUserException;
-import ru.babobka.nodemasterserver.exception.UserAlreadyExistsException;
 import ru.babobka.nodemasterserver.model.User;
 import ru.babobka.nodemasterserver.service.NodeUsersService;
 import ru.babobka.nodemasterserver.service.NodeUsersServiceImpl;
@@ -49,18 +48,13 @@ public class NodeUsersCRUDWebController extends WebController {
 	}
 
 	@Override
-	public HttpResponse onPost(HttpRequest request) {
+	public HttpResponse onPatch(HttpRequest request) {
 		try {
 			User user = User.fromJson(new JSONObject(request.getBody()));
-			try {
-				if (nodeUsersService.add(user)) {
-					return HttpResponse.ok();
-				} else {
-					return HttpResponse.textResponse(ResponseCode.INTERNAL_SERVER_ERROR,
-							ResponseCode.INTERNAL_SERVER_ERROR);
-				}
-			} catch (UserAlreadyExistsException e) {
-				return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
+			if (nodeUsersService.add(user)) {
+				return HttpResponse.ok();
+			} else {
+				return HttpResponse.textResponse(ResponseCode.BAD_REQUEST);
 			}
 		} catch (InvalidUserException | JSONException e) {
 			return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
@@ -69,7 +63,7 @@ public class NodeUsersCRUDWebController extends WebController {
 	}
 
 	@Override
-	public HttpResponse onPatch(HttpRequest request) throws JSONException {
+	public HttpResponse onPost(HttpRequest request) throws JSONException {
 		String userName = request.getUrlParam("name");
 		JSONObject userJsonObject = new JSONObject(request.getBody());
 		Integer taskCount = null;

@@ -5,7 +5,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
-import ru.babobka.nodemasterserver.model.ServerContext;
+import ru.babobka.nodemasterserver.server.ServerContext;
 
 public class CacheDAOImpl implements CacheDAO {
 

@@ -9,7 +9,7 @@ import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.exception.CanNotInitTaskFactoryException;
 import ru.babobka.nodemasterserver.exception.EmptyFactoryPoolException;
-import ru.babobka.nodemasterserver.model.ServerContext;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
 import ru.babobka.subtask.model.SubTask;

@@ -1,6 +1,5 @@
 package ru.babobka.nodemasterserver.dao;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import ru.babobka.nodemasterserver.model.User;
@@ -20,7 +19,7 @@ public interface NodeUsersDAO {
 
 	boolean remove(String login);
 
-	boolean update(String login, String newLogin, BigInteger hashedPassword, String email, Integer taskCount);
+	boolean update(String login, String newLogin, String password, String email, Integer taskCount);
 
 	boolean incrTaskCount(String login);
 

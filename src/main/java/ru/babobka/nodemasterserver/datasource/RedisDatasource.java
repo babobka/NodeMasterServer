@@ -4,6 +4,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Protocol;
+import ru.babobka.nodemasterserver.server.ServerContext;
 
 public class RedisDatasource {
 
@@ -11,15 +12,17 @@ public class RedisDatasource {
 
 	private static final int PORT = 6379;
 
-	private static final int DATABASE_NUMBER = 1;
+	public static final int PRODUCTION_DATABASE_NUMBER = 1;
+
+	public static final int TEST_DATABASE_NUMBER = 2;
 
 	private static volatile RedisDatasource instance;
 
 	private JedisPool pool;
 
 	private RedisDatasource() {
-		pool = new JedisPool(new GenericObjectPoolConfig(), HOST, PORT,
-				Protocol.DEFAULT_TIMEOUT, null, DATABASE_NUMBER, null);
+		pool = new JedisPool(new GenericObjectPoolConfig(), HOST, PORT, Protocol.DEFAULT_TIMEOUT, null,
+				ServerContext.getInstance().getDatabaseNumber(), null);
 
 	}
 

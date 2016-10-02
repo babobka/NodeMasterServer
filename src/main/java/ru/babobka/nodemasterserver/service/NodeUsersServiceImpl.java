@@ -1,24 +1,20 @@
 package ru.babobka.nodemasterserver.service;
 
-import java.math.BigInteger;
 import java.util.List;
 
 import ru.babobka.nodemasterserver.dao.NodeUsersDAO;
 import ru.babobka.nodemasterserver.dao.NodeUsersDAOImpl;
-import ru.babobka.nodemasterserver.exception.UserAlreadyExistsException;
 import ru.babobka.nodemasterserver.model.User;
-import ru.babobka.nodemasterserver.util.MathUtil;
 
 public class NodeUsersServiceImpl implements NodeUsersService {
 
 	private final NodeUsersDAO userDAO = NodeUsersDAOImpl.getInstance();
 
 	private static volatile NodeUsersServiceImpl instance;
-	
+
 	private NodeUsersServiceImpl() {
 
 	}
-
 
 	public static NodeUsersServiceImpl getInstance() {
 		NodeUsersServiceImpl localInstance = instance;
@@ -50,11 +46,11 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	}
 
 	@Override
-	public boolean add(User user) throws UserAlreadyExistsException {
+	public boolean add(User user) {
 		if (!userDAO.exists(user.getName())) {
 			return userDAO.add(user);
 		}
-		throw new UserAlreadyExistsException();
+		return false;
 
 	}
 
@@ -64,12 +60,12 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	}
 
 	@Override
-	public boolean update(String login, String newLogin, String password,
-			String email, Integer taskCount) {
-		return userDAO
-				.update(login, newLogin,
-						new BigInteger(MathUtil.sha2(password)).abs(), email,
-						taskCount);
+	public boolean update(String login, String newLogin, String password, String email, Integer taskCount) {
+		if (login != null) {
+			return userDAO.update(login, newLogin, password, email, taskCount);
+		}
+		return false;
+
 	}
 
 }

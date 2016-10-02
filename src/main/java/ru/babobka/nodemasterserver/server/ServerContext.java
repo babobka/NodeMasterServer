@@ -1,6 +1,9 @@
-package ru.babobka.nodemasterserver.model;
+package ru.babobka.nodemasterserver.server;
 
 import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
+import ru.babobka.nodemasterserver.datasource.RedisDatasource;
+import ru.babobka.nodemasterserver.model.ClientThreads;
+import ru.babobka.nodemasterserver.model.ResponseStorage;
 import ru.babobka.vsjsw.logger.SimpleLogger;
 
 public class ServerContext {
@@ -13,11 +16,20 @@ public class ServerContext {
 
 	private final ResponseStorage responseStorage;
 
+	private final int databaseNumber;
+
 	private static volatile ServerContext instance;
+
+	private static volatile boolean production;
 
 	private ServerContext() {
 		try {
-			config = JSONFileServerConfigBuilder.build();
+			config = JSONFileServerConfigBuilder.build(production);
+			if (production) {
+				databaseNumber = RedisDatasource.PRODUCTION_DATABASE_NUMBER;
+			} else {
+				databaseNumber = RedisDatasource.TEST_DATABASE_NUMBER;
+			}
 			logger = new SimpleLogger("NodeServer", config.getLoggerFolder(), "server");
 			responseStorage = new ResponseStorage();
 			clientThreads = new ClientThreads(config.getMaxClients());
@@ -51,13 +63,26 @@ public class ServerContext {
 		return logger;
 	}
 
-
 	public ClientThreads getClientThreads() {
 		return clientThreads;
 	}
 
 	public ResponseStorage getResponseStorage() {
 		return responseStorage;
+	}
+
+	static void setProduction(boolean production) {
+		if (instance == null) {
+			synchronized (ServerContext.class) {
+				if (instance == null) {
+					ServerContext.production = production;
+				}
+			}
+		}
+	}
+
+	public int getDatabaseNumber() {
+		return databaseNumber;
 	}
 
 }

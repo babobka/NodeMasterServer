@@ -1,7 +1,5 @@
 package ru.babobka.nodemasterserver.server;
 
-import ru.babobka.nodemasterserver.model.ServerContext;
-
 public class ServerExecutor {
 
 	private final MasterServer server;

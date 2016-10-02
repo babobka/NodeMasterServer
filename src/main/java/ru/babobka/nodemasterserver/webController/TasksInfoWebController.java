@@ -3,7 +3,7 @@ package ru.babobka.nodemasterserver.webController;
 import org.json.JSONException;
 
 import ru.babobka.nodemasterserver.model.ResponsesArrayMeta;
-import ru.babobka.nodemasterserver.model.ServerContext;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;

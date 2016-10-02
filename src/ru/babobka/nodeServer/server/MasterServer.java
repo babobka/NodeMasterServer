@@ -41,13 +41,7 @@ public final class MasterServer {
 
 	private volatile boolean running;
 
-	private volatile Thread runThread;
-
 	private static volatile MasterServer instance;
-
-	private volatile boolean starting;
-
-	private volatile boolean stopping;
 
 	private MasterServer() {
 
@@ -66,41 +60,7 @@ public final class MasterServer {
 		return localInstance;
 	}
 
-	public void run() {
-		if (!running && !starting) {
-			synchronized (this) {
-				if (!running && !starting) {
-					ServerContext.getInstance().getLogger().log("NodeServer run");
-					starting = true;
-					if (runThread != null && runThread.isAlive()) {
-						try {
-							runThread.join();
-						} catch (InterruptedException e) {
-							runThread.interrupt();
-							ServerContext.getInstance().getLogger().log(e);
-						}
-					}
-					runThread = new Thread(new Runnable() {
-
-						@Override
-						public void run() {
-							try {
-								runBlocking();
-							} catch (Exception e) {
-								ServerContext.getInstance().getLogger().log(e);
-								stop();
-								running = false;
-							}
-
-						}
-					});
-					runThread.start();
-				}
-			}
-		}
-	}
-
-	private void runBlocking() throws IOException {
+	void run() throws IOException {
 		ServerContext.getInstance().getLogger().log("NodeServer runBlocking");
 		try {
 			factoryPool.init();
@@ -128,15 +88,13 @@ public final class MasterServer {
 			running = true;
 		} catch (Exception e) {
 			running = false;
-			stopBrutal();
+			stop();
 			throw new IOException(e);
-		} finally {
-			starting = false;
 		}
 
 	}
 
-	private void stopBrutal() {
+	void stop() {
 		factoryPool.clear();
 		WebServer localWebServer = webServer;
 		if (localWebServer != null) {
@@ -172,36 +130,11 @@ public final class MasterServer {
 		running = false;
 	}
 
-	public void stop() {
-		while (starting) {
-			Thread.yield();
-		}
-		if (running) {
-			synchronized (this) {
-				if (running) {
-					try {
-						stopping = true;
-						ServerContext.getInstance().getLogger().log("Try to stop NodeServer");
-						stopBrutal();
-					} finally {
-						stopping = false;
-					}
-				}
-			}
-		}
-	}
-
 	public boolean isRunning() {
-		while (starting || stopping) {
-			Thread.yield();
-		}
 		return running;
 	}
 
 	public boolean isStopped() {
-		while (starting || stopping) {
-			Thread.yield();
-		}
 		WebServer localWebServer = webServer;
 		Thread localListenerThread = listenerThread;
 		Thread localHeartBeatingThread = heartBeatingThread;
@@ -220,8 +153,10 @@ public final class MasterServer {
 
 	public static void main(String[] args) {
 		MasterServer server = new MasterServer();
-		server.run();
-		
+		ServerExecutor executor = new ServerExecutor(server);
+		executor.run();
+		// server.run();
+
 	}
 
 }

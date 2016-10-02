@@ -7,48 +7,52 @@ import org.junit.Test;
 
 public class ServerTest {
 
+	private final int tests = 15;
+
+	private final ServerExecutor serverExecutor = new ServerExecutor(MasterServer.getInstance());
+
 	@After
 	public void tearDown() {
-		MasterServer.getInstance().stop();
+		serverExecutor.stop();
 	}
 
 	@Test
 	public void testRun() {
-		MasterServer server = MasterServer.getInstance();
-		server.run();
-		assertTrue(server.isRunning());
+
+		serverExecutor.run();
+		assertTrue(serverExecutor.isRunning());
 	}
 
 	@Test
 	public void testMultipleRunStop() {
-		MasterServer server = MasterServer.getInstance();
-		for (int i = 0; i < 5; i++) {
-			server.run();
-			assertTrue(server.isRunning());
-			assertFalse(server.isStopped());
-			server.stop();
-			assertTrue(server.isStopped());
-			assertFalse(server.isRunning());
+
+		for (int i = 0; i < tests; i++) {
+			serverExecutor.run();
+			assertTrue(serverExecutor.isRunning());
+			assertFalse(serverExecutor.isStopped());
+			serverExecutor.stop();
+			assertTrue(serverExecutor.isStopped());
+			assertFalse(serverExecutor.isRunning());
 		}
 	}
 
 	@Test
 	public void testDoubleRun() {
-		MasterServer server = MasterServer.getInstance();
-		server.run();
-		server.run();
-		assertTrue(server.isRunning());
+
+		serverExecutor.run();
+		serverExecutor.run();
+		assertTrue(serverExecutor.isRunning());
 	}
 
 	@Test
 	public void testStop() {
-		MasterServer server = MasterServer.getInstance();
-		server.run();
-		assertTrue(server.isRunning());
-		assertFalse(server.isStopped());
-		server.stop();
-		assertTrue(server.isStopped());
-		assertFalse(server.isRunning());
+
+		serverExecutor.run();
+		assertTrue(serverExecutor.isRunning());
+		assertFalse(serverExecutor.isStopped());
+		serverExecutor.stop();
+		assertTrue(serverExecutor.isStopped());
+		assertFalse(serverExecutor.isRunning());
 	}
 
 }

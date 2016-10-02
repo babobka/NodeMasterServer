@@ -7,6 +7,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
@@ -15,6 +16,7 @@ import java.net.Socket;
 import java.net.URISyntaxException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Scanner;
 
 import ru.babobka.nodeServer.classloader.JarClassLoader;
 
@@ -26,6 +28,24 @@ public final class StreamUtil {
 
 	private StreamUtil() {
 
+	}
+
+	public static String readFile(InputStream is) {
+		Scanner scanner = null;
+		try {
+			scanner = new Scanner(is).useDelimiter("\\A");
+			return scanner.hasNext() ? scanner.next() : "";
+
+		} finally {
+			if (scanner != null) {
+				scanner.close();
+			}
+			try {
+				is.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	public static String readFile(File file) {

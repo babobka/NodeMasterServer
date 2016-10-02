@@ -2,12 +2,14 @@ package ru.babobka.nodemasterserver.service;
 
 import static org.junit.Assert.*;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import org.junit.After;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.model.User;
+import ru.babobka.nodeserials.RSA;
 
 public class NodeUserServiceTest {
 
@@ -15,7 +17,9 @@ public class NodeUserServiceTest {
 
 	private final String userName = "test_user";
 
-	private final User testUser = new User(userName, "123", 0, "test@email.com");
+	private final String password = "123";
+
+	private final User testUser = new User(userName, password, 0, "test@email.com");
 
 	@After
 	public void tearDown() {
@@ -70,6 +74,27 @@ public class NodeUserServiceTest {
 	public void testInvalidUpdate() {
 		userService.add(testUser);
 		assertFalse(userService.update(null, null, null, null, null));
+	}
+
+	@Test
+	public void testAuth() {
+		userService.add(testUser);
+		BigInteger integerHashedPassword = RSA.bytesToHashedBigInteger(testUser.getHashedPassword());
+		assertTrue(userService.auth(testUser.getName(), integerHashedPassword));
+	}
+
+	@Test
+	public void testBadPasswordAuth() {
+		userService.add(testUser);
+		BigInteger integerHashedPassword = RSA.stringToBigInteger(password + "abc");
+		assertFalse(userService.auth(testUser.getName(), integerHashedPassword));
+	}
+
+	@Test
+	public void testBadLoginAuth() {
+		userService.add(testUser);
+		BigInteger integerHashedPassword = RSA.bytesToHashedBigInteger(testUser.getHashedPassword());
+		assertFalse(userService.auth(testUser.getName() + "abc", integerHashedPassword));
 	}
 
 }

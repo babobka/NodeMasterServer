@@ -9,7 +9,6 @@ import java.security.MessageDigest;
  */
 public interface MathUtil {
 
-
 	static byte[] sha2(String message) {
 		if (message != null) {
 			try {
@@ -21,7 +20,7 @@ public interface MathUtil {
 
 			}
 		}
-		return new byte[] {};
+		return new byte[256];
 	}
 
 	static NodeRequest[] subArray(NodeRequest[] requests, int beginIndex) {

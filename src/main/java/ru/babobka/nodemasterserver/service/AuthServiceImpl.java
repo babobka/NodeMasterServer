@@ -1,27 +1,23 @@
 package ru.babobka.nodemasterserver.service;
 
-
-import ru.babobka.nodemasterserver.dao.NodeUsersDAO;
-import ru.babobka.nodemasterserver.dao.NodeUsersDAOImpl;
-import ru.babobka.nodemasterserver.model.AuthResult;
-import ru.babobka.nodemasterserver.model.User;
-import ru.babobka.nodemasterserver.server.ServerContext;
-import ru.babobka.nodemasterserver.util.StreamUtil;
-import ru.babobka.nodeserials.NodeResponse;
-import ru.babobka.nodeserials.RSA;
-
 import java.math.BigInteger;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import ru.babobka.nodemasterserver.model.AuthResult;
+import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.util.StreamUtil;
+import ru.babobka.nodeserials.NodeResponse;
+import ru.babobka.nodeserials.RSA;
+
 /**
  * Created by dolgopolov.a on 29.10.15.
  */
 public class AuthServiceImpl implements AuthService {
 
-	private final NodeUsersDAO nodeUsersDAO = NodeUsersDAOImpl.getInstance();
+	private final NodeUsersService usersService = NodeUsersServiceImpl.getInstance();
 
 	private static volatile AuthServiceImpl instance;
 
@@ -42,14 +38,6 @@ public class AuthServiceImpl implements AuthService {
 		return localInstance;
 	}
 
-	private boolean auth(String login, BigInteger hashedPassword) {
-		User user = nodeUsersDAO.get(login);
-		if (user != null && user.getHashedPassword().equals(hashedPassword)) {
-			return true;
-		}
-		return false;
-	}
-
 	@Override
 	public AuthResult getAuthResult(RSA rsa, Socket socket) {
 		try {
@@ -57,7 +45,7 @@ public class AuthServiceImpl implements AuthService {
 
 			NodeResponse authResponse = (NodeResponse) StreamUtil.receiveObject(socket);
 			if (authResponse.isAuthResponse()) {
-				BigInteger password = rsa.decrypt((BigInteger) authResponse.getAddition().get("password"));
+				BigInteger integerHashedPassword = rsa.decrypt((BigInteger) authResponse.getAddition().get("password"));
 				String login = (String) authResponse.getAddition().get("login");
 				@SuppressWarnings("unchecked")
 				LinkedList<String> uriList = (LinkedList<String>) authResponse.getAddition().get("uriList");
@@ -68,7 +56,7 @@ public class AuthServiceImpl implements AuthService {
 				for (String uri : uriList) {
 					taskSet.add(uri);
 				}
-				boolean authSuccess = auth(login, password);
+				boolean authSuccess = usersService.auth(login, integerHashedPassword);
 				StreamUtil.sendObject(authSuccess, socket);
 				if (authSuccess) {
 					return new AuthResult(true, login, taskSet);

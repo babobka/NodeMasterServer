@@ -5,10 +5,12 @@ import static org.junit.Assert.*;
 import java.math.BigInteger;
 import java.util.List;
 
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.model.User;
+import ru.babobka.nodemasterserver.model.UserHttpEntity;
 import ru.babobka.nodeserials.RSA;
 
 public class NodeUserServiceTest {
@@ -65,7 +67,9 @@ public class NodeUserServiceTest {
 	public void testUpdate() {
 		int oldTaskCount = testUser.getTaskCount();
 		userService.add(testUser);
-		assertTrue(userService.update(testUser.getName(), null, null, null, testUser.getTaskCount() + 1));
+		JSONObject jsonObject = new JSONObject();
+		jsonObject.put("taskCount", testUser.getTaskCount() + 1);
+		assertTrue(userService.update(testUser.getName(), new UserHttpEntity(jsonObject)));
 		User user = userService.get(testUser.getName());
 		assertEquals(oldTaskCount + 1, user.getTaskCount().intValue());
 	}
@@ -73,7 +77,7 @@ public class NodeUserServiceTest {
 	@Test
 	public void testInvalidUpdate() {
 		userService.add(testUser);
-		assertFalse(userService.update(null, null, null, null, null));
+		assertFalse(userService.update(null, new UserHttpEntity(new JSONObject())));
 	}
 
 	@Test

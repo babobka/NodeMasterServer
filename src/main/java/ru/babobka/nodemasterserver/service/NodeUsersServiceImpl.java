@@ -6,6 +6,7 @@ import java.util.List;
 import ru.babobka.nodemasterserver.dao.NodeUsersDAO;
 import ru.babobka.nodemasterserver.dao.NodeUsersDAOImpl;
 import ru.babobka.nodemasterserver.model.User;
+import ru.babobka.nodemasterserver.model.UserHttpEntity;
 import ru.babobka.nodemasterserver.util.MathUtil;
 import ru.babobka.nodeserials.RSA;
 
@@ -63,9 +64,10 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	}
 
 	@Override
-	public boolean update(String login, String newLogin, String password, String email, Integer taskCount) {
-		if (login != null) {
-			return userDAO.update(login, newLogin, password, email, taskCount);
+	public boolean update(String userLoginToUpdate, UserHttpEntity userHttpEntity) {
+		if (userLoginToUpdate != null) {
+			return userDAO.update(userLoginToUpdate, userHttpEntity.getEmail(), userHttpEntity.getPassword(),
+					userHttpEntity.getEmail(), userHttpEntity.getTaskCount());
 		}
 		return false;
 

@@ -5,6 +5,7 @@ import java.io.File;
 import org.json.JSONObject;
 import ru.babobka.nodemasterserver.exception.ServerConfigurationException;
 
+
 public class ServerConfig {
 
 	private final int maxClients;

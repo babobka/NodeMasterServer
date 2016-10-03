@@ -164,8 +164,9 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				t.hdel(USERS_KEY, login);
 				t.del(USER_KEY + userId);
 				t.exec();
+				return true;
 			}
-			return true;
+			return false;
 		} catch (Exception e) {
 			ServerContext.getInstance().getLogger().log(e);
 			if (t != null) {
@@ -181,13 +182,15 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 	@Override
 	public boolean update(String login, String newLogin, String password, String email, Integer taskCount) {
 		Jedis jedis = null;
+		Transaction t = null;
 		try {
 			jedis = RedisDatasource.getInstance().getPool().getResource();
+			t = jedis.multi();
 			Integer userId = getUserId(login);
 			if (userId != null) {
-				if (newLogin!=null && !newLogin.equals(login)) {
-					jedis.hdel(USERS_KEY, login);
-					jedis.hset(USERS_KEY, login, String.valueOf(userId));
+				if (newLogin != null && !newLogin.equals(login)) {
+					t.hdel(USERS_KEY, login);
+					t.hset(USERS_KEY, login, String.valueOf(userId));
 				}
 				Map<byte[], byte[]> map = new HashMap<>();
 				if (email != null) {
@@ -199,12 +202,17 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				if (taskCount != null) {
 					map.put(TASK_COUNT, String.valueOf(taskCount).getBytes());
 				}
-				jedis.hmset((USER_KEY + userId).getBytes(), map);
+				t.hmset((USER_KEY + userId).getBytes(), map);
+				t.exec();
 				return true;
 			}
 		} catch (Exception e) {
 			ServerContext.getInstance().getLogger().log(e);
+			if (t != null) {
+				t.discard();
+			}
 		} finally {
+
 			if (jedis != null)
 				jedis.close();
 		}

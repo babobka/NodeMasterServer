@@ -4,7 +4,7 @@ import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.model.ClientThreads;
 import ru.babobka.nodemasterserver.model.ResponseStorage;
-import ru.babobka.vsjsw.logger.SimpleLogger;
+import ru.babobka.vsjws.logger.SimpleLogger;
 
 public class ServerContext {
 

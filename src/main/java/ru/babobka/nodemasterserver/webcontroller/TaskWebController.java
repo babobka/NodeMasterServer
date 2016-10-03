@@ -1,4 +1,4 @@
-package ru.babobka.nodemasterserver.webController;
+package ru.babobka.nodemasterserver.webcontroller;
 
 import java.io.IOException;
 

@@ -5,7 +5,6 @@ import java.util.Arrays;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import ru.babobka.nodemasterserver.constant.RegularPatterns;
 import ru.babobka.nodemasterserver.exception.InvalidUserException;
 import ru.babobka.nodemasterserver.util.MathUtil;
 
@@ -13,6 +12,9 @@ import ru.babobka.nodemasterserver.util.MathUtil;
  * Created by dolgopolov.a on 29.10.15.
  */
 public class User {
+
+	public static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
 	private final String name;
 
@@ -38,10 +40,11 @@ public class User {
 			throw new InvalidUserException("'password' must be set");
 		}
 		if (email != null) {
-			if (!email.matches(RegularPatterns.EMAIL)) {
-				throw new InvalidUserException("'email' is not valid");
+			if (email.matches(EMAIL_PATTERN)) {
+				this.email = email;
+			} else {
+				throw new InvalidUserException("invalid email " + email);
 			}
-			this.email = email;
 		} else {
 			this.email = null;
 		}
@@ -102,10 +105,6 @@ public class User {
 	public Integer getId() {
 		return id;
 	}
-
-
-
-
 
 	@Override
 	public int hashCode() {

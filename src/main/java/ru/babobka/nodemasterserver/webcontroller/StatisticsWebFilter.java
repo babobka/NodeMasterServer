@@ -1,4 +1,4 @@
-package ru.babobka.nodemasterserver.webController;
+package ru.babobka.nodemasterserver.webcontroller;
 
 import ru.babobka.nodemasterserver.dao.StatisticsDAOImpl;
 import ru.babobka.nodemasterserver.dao.StatisticsDAO;

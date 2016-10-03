@@ -1,9 +1,8 @@
-package ru.babobka.nodemasterserver.webController;
+package ru.babobka.nodemasterserver.webcontroller;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import ru.babobka.nodemasterserver.constant.RegularPatterns;
 import ru.babobka.nodemasterserver.exception.InvalidUserException;
 import ru.babobka.nodemasterserver.model.User;
 import ru.babobka.nodemasterserver.service.NodeUsersService;
@@ -34,6 +33,7 @@ public class NodeUsersCRUDWebController extends WebController {
 
 	@Override
 	public HttpResponse onDelete(HttpRequest request) {
+
 		String userName = request.getUrlParam("userName");
 		if (userName == null) {
 			return HttpResponse.textResponse("Parameter 'userName' was not set", ResponseCode.BAD_REQUEST);
@@ -45,18 +45,20 @@ public class NodeUsersCRUDWebController extends WebController {
 						ResponseCode.INTERNAL_SERVER_ERROR);
 			}
 		}
+
 	}
 
 	@Override
 	public HttpResponse onPatch(HttpRequest request) {
+
 		try {
 			User user = User.fromJson(new JSONObject(request.getBody()));
 			if (nodeUsersService.add(user)) {
 				return HttpResponse.ok();
 			} else {
-				return HttpResponse.textResponse(ResponseCode.BAD_REQUEST);
+				return HttpResponse.textResponse(ResponseCode.BAD_REQUEST.toString(), ResponseCode.BAD_REQUEST);
 			}
-		} catch (InvalidUserException | JSONException e) {
+		} catch (InvalidUserException e) {
 			return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
 		}
 
@@ -78,7 +80,7 @@ public class NodeUsersCRUDWebController extends WebController {
 				return HttpResponse.textResponse("'taskCount' is negative", ResponseCode.BAD_REQUEST);
 			}
 		}
-		if (!userJsonObject.isNull("email") && !userJsonObject.getString("email").matches(RegularPatterns.EMAIL)) {
+		if (!userJsonObject.isNull("email") && !userJsonObject.getString("email").matches(User.EMAIL_PATTERN)) {
 			return HttpResponse.textResponse("'email' is not valid", ResponseCode.BAD_REQUEST);
 		}
 		if (!userJsonObject.isNull("password")) {

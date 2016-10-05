@@ -14,11 +14,15 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.json.JSONObject;
+
 import ru.babobka.nodemasterserver.classloader.JarClassLoader;
+import ru.babobka.subtask.model.SubTask;
 
 /**
  * Created by dolgopolov.a on 08.07.15.
@@ -98,11 +102,23 @@ public final class StreamUtil {
 		return folder;
 	}
 
-	public static Class<?> getTaskClassFromJar(String jarFilePath) throws ClassNotFoundException {
-		String className = "subtask.Task";
-		JarClassLoader jarLoader = new JarClassLoader(jarFilePath);
-		return jarLoader.loadClass(className, true);
+	public static JSONObject getConfigJson(String jarFilePath) throws IOException {
+		return new JSONObject(readTextFileFromJar(jarFilePath, "task.json"));
+	}
 
+	public static String readTextFileFromJar(String jarFilePath, String fileName) throws IOException {
+		URL url = new URL("jar:file:" + jarFilePath + "!/" + fileName);
+		InputStream is = url.openStream();
+		return readFile(is);
+	}
+
+	public static SubTask getTaskClassFromJar(String jarFilePath, String className) throws IOException {
+		try {
+			JarClassLoader jarLoader = new JarClassLoader(jarFilePath);
+			return (SubTask) (jarLoader.loadClass(className, true).newInstance());
+		} catch (Exception e) {
+			throw new IOException("Can not get " + className, e);
+		}
 	}
 
 	public static void sendObject(Object object, Socket socket) throws IOException {

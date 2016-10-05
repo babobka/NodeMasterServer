@@ -76,7 +76,7 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	@Override
 	public boolean auth(String login, String password) {
 		User user = get(login);
-		if (user != null && user.getHashedPassword().equals(MathUtil.sha2(password))) {
+		if (user != null && java.util.Arrays.equals(user.getHashedPassword(), MathUtil.sha2(password))) {
 			return true;
 		}
 		return false;

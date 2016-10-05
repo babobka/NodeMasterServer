@@ -1,4 +1,4 @@
-package ru.babobka.nodemasterserver.model;
+package ru.babobka.nodemasterserver.task;
 
 public class TaskStartResult {
 

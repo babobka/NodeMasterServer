@@ -7,7 +7,7 @@ import org.junit.Test;
 
 public class ServerTest {
 
-	private final int tests = 15;
+	private final int tests = 10;
 
 	private final ServerExecutor serverExecutor = new ServerExecutor(MasterServer.getInstance());
 

@@ -9,11 +9,12 @@ import ru.babobka.nodemasterserver.exception.DistributionException;
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
 import ru.babobka.nodemasterserver.model.ResponseStorage;
 import ru.babobka.nodemasterserver.model.ResponsesArray;
-import ru.babobka.nodemasterserver.model.TaskResult;
-import ru.babobka.nodemasterserver.model.TaskStartResult;
 import ru.babobka.nodemasterserver.model.Timer;
-import ru.babobka.nodemasterserver.pool.FactoryPool;
 import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.task.TaskContext;
+import ru.babobka.nodemasterserver.task.TaskPool;
+import ru.babobka.nodemasterserver.task.TaskResult;
+import ru.babobka.nodemasterserver.task.TaskStartResult;
 import ru.babobka.nodemasterserver.thread.ClientThread;
 import ru.babobka.nodemasterserver.util.DistributionUtil;
 import ru.babobka.nodeserials.NodeRequest;
@@ -25,7 +26,7 @@ import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
 
 public class HttpTaskServiceImpl implements HttpTaskService {
 
-	private static FactoryPool factoryPool = FactoryPool.getInstance();
+	private static TaskPool taskPool = TaskPool.getInstance();
 
 	private static final String WRONG_ARGUMENTS = "Wrong arguments";
 
@@ -54,21 +55,23 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 
 	}
 
-	private void startTask(SubTask task, long taskId, Map<String, String> arguments)
+	private void startTask(TaskContext taskContext, long taskId, Map<String, String> arguments)
 			throws EmptyClusterException, DistributionException {
 		int currentClusterSize;
-		if (isRequestDataIsTooSmall(task, arguments)) {
+		String taskName = taskContext.getConfig().getName();
+		if (isRequestDataIsTooSmall(taskContext.getTask(), arguments)) {
 			currentClusterSize = 1;
 		} else {
-			currentClusterSize = ServerContext.getInstance().getClientThreads().getClusterSize(task.getTaskName());
+			currentClusterSize = ServerContext.getInstance().getClientThreads().getClusterSize(taskName);
 		}
 		if (currentClusterSize < 1) {
 			throw new EmptyClusterException();
 		} else {
 			ServerContext.getInstance().getResponseStorage().put(taskId,
-					new ResponsesArray(currentClusterSize, task.getTaskName(), task, arguments));
-			NodeRequest[] requests = task.getDistributor().distribute(arguments, currentClusterSize, taskId);
-			DistributionUtil.broadcastRequests(task.getTaskName(), requests);
+					new ResponsesArray(currentClusterSize, taskContext, arguments));
+			NodeRequest[] requests = taskContext.getTask().getDistributor().distribute(arguments, currentClusterSize,
+					taskId);
+			DistributionUtil.broadcastRequests(taskName, requests);
 		}
 
 	}
@@ -82,13 +85,13 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 
 	}
 
-	private TaskStartResult startTask(HttpRequest request, SubTask task, long taskId) {
+	private TaskStartResult startTask(HttpRequest request, TaskContext taskContext, long taskId) {
 		String requestUri = getTaskName(request);
-		RequestDistributor requestDistributor = task.getDistributor();
+		RequestDistributor requestDistributor = taskContext.getTask().getDistributor();
 		if (requestDistributor.isValidArguments(request.getUrlParams())) {
 			ServerContext.getInstance().getLogger().log(Level.INFO, "Task id is " + taskId);
 			try {
-				startTask(task, taskId, request.getUrlParams());
+				startTask(taskContext, taskId, request.getUrlParams());
 				return new TaskStartResult(taskId);
 			} catch (DistributionException e) {
 				ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
@@ -117,7 +120,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 			ResponseStorage responseStorage = ServerContext.getInstance().getResponseStorage();
 			ResponsesArray responsesArray = responseStorage.get(taskId);
 			if (responsesArray != null) {
-				return factoryPool.get(responsesArray.getMeta().getTaskName()).getReducer()
+				return taskPool.get(responsesArray.getMeta().getTaskName()).getTask().getReducer()
 						.reduce(responsesArray.getResponseList());
 
 			} else {
@@ -130,13 +133,13 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 	}
 
 	@Override
-	public HttpResponse getResult(HttpRequest request, SubTask task) {
+	public HttpResponse getResult(HttpRequest request, TaskContext taskContext) {
 
 		Map<String, Serializable> resultMap;
 
 		Long taskId = (long) (Math.random() * Integer.MAX_VALUE);
 		try {
-			TaskStartResult startResult = startTask(request, task, taskId);
+			TaskStartResult startResult = startTask(request, taskContext, taskId);
 			if (!startResult.isFailed()) {
 				Timer timer = new Timer();
 				resultMap = getTaskResult(startResult.getTaskId());

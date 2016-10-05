@@ -1,13 +1,12 @@
 package ru.babobka.nodemasterserver.model;
 
-
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
 import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.task.TaskContext;
 import ru.babobka.nodemasterserver.thread.ClientThread;
 import ru.babobka.nodemasterserver.util.DistributionUtil;
 import ru.babobka.nodeserials.NodeRequest;
 import ru.babobka.nodeserials.NodeResponse;
-import ru.babobka.subtask.model.SubTask;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -25,7 +24,7 @@ public final class ResponsesArray {
 
 	private final int maxSize;
 
-	private final SubTask subTask;
+	private final TaskContext taskContext;
 
 	private final ResponsesArrayMeta meta;
 
@@ -33,11 +32,11 @@ public final class ResponsesArray {
 
 	private final AtomicReferenceArray<NodeResponse> responseArray;
 
-	public ResponsesArray(int maxSize, String taskName, SubTask subTask, Map<String, String> params) {
+	public ResponsesArray(int maxSize, TaskContext taskContext, Map<String, String> params) {
 		this.maxSize = maxSize;
 		this.responseArray = new AtomicReferenceArray<>(maxSize);
-		this.subTask = subTask;
-		this.meta = new ResponsesArrayMeta(taskName, params, System.currentTimeMillis());
+		this.taskContext = taskContext;
+		this.meta = new ResponsesArrayMeta(taskContext.getConfig().getName(), params, System.currentTimeMillis());
 		size = new AtomicInteger(0);
 	}
 
@@ -76,7 +75,8 @@ public final class ResponsesArray {
 							ServerContext.getInstance().getLogger().log(Level.INFO,
 									TASK + " " + response.getTaskId() + " is ready ");
 						}
-					} else if (subTask.isRaceStyle() && subTask.getReducer().isValidResponse(response)) {
+					} else if (taskContext.getConfig().isRaceStyle()
+							&& taskContext.getTask().getReducer().isValidResponse(response)) {
 						List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads()
 								.getListByTaskId(response.getTaskId());
 						try {

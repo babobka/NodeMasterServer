@@ -64,7 +64,7 @@ public class User {
 	public static User fromJson(JSONObject json) throws InvalidUserException {
 		try {
 			String name = null, password = null, email = null;
-			Integer taskCount = null;
+			int taskCount =0;
 			if (!json.isNull("name")) {
 				name = json.getString("name");
 			}
@@ -77,7 +77,7 @@ public class User {
 			}
 			if (!json.isNull("taskCount")) {
 				taskCount = json.getInt("taskCount");
-			}
+			} 
 
 			return new User(name, password, taskCount, email);
 

@@ -6,8 +6,8 @@ import java.util.TimeZone;
 
 import ru.babobka.nodemasterserver.listener.OnJSONExceptionListener;
 import ru.babobka.nodemasterserver.model.ClientThreads;
-import ru.babobka.nodemasterserver.pool.FactoryPool;
 import ru.babobka.nodemasterserver.runnable.HeartBeatingRunnable;
+import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.nodemasterserver.thread.InputListenerThread;
 import ru.babobka.nodemasterserver.webcontroller.AuthWebFilter;
 import ru.babobka.nodemasterserver.webcontroller.AvailableTasksWebController;
@@ -31,7 +31,7 @@ public final class MasterServer {
 		TimeZone.setDefault(TimeZone.getTimeZone("GMT+3"));
 	}
 
-	private final FactoryPool factoryPool = FactoryPool.getInstance();
+	private final TaskPool taskPool = TaskPool.getInstance();
 
 	private volatile Thread heartBeatingThread;
 
@@ -64,7 +64,6 @@ public final class MasterServer {
 
 	void run() throws IOException {
 		try {
-			factoryPool.init();
 			listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getMainServerPort());
 			heartBeatingThread = new Thread(new HeartBeatingRunnable());
 			listenerThread.start();
@@ -74,8 +73,8 @@ public final class MasterServer {
 			WebFilter authWebFilter = new AuthWebFilter();
 			WebFilter cacheWebFilter = new CacheWebFilter();
 			WebFilter statisticsWebFilter = new StatisticsWebFilter();
-			for (String taskName : factoryPool.getAvailableTasks().keySet()) {
-				webServer.addController("/" + taskName, new TaskWebController().addWebFilter(authWebFilter)
+			for (String taskName : taskPool.getTasksMap().keySet()) {
+				webServer.addController("task/" + taskName, new TaskWebController().addWebFilter(authWebFilter)
 						.addWebFilter(cacheWebFilter).addWebFilter(statisticsWebFilter));
 			}
 			webServer.addController("cancelTask", new CancelTaskWebController().addWebFilter(authWebFilter));
@@ -96,7 +95,6 @@ public final class MasterServer {
 	}
 
 	void stop() {
-		factoryPool.clear();
 		WebServerExecutor localWebServerExecutor = webServerExecutor;
 		if (localWebServerExecutor != null) {
 			localWebServerExecutor.stop();
@@ -148,7 +146,7 @@ public final class MasterServer {
 		}
 		boolean allThreadsAreNotAlive = heartBeatingThreadNotAlive && listenerThreadIsNotAlive
 				&& clientThreadsAreNotAlive;
-		return !running && factoryPool.isEmpty() && allThreadsAreNotAlive && webServerIsStopped;
+		return !running  && allThreadsAreNotAlive && webServerIsStopped;
 	}
 
 	public static void main(String[] args) {

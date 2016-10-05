@@ -1,6 +1,6 @@
 package ru.babobka.nodemasterserver.exception;
 
-public class CanNotInitTaskFactoryException extends Exception {
+public class CanNotInitTaskFactoryException extends RuntimeException {
 
 	/**
 	 * 

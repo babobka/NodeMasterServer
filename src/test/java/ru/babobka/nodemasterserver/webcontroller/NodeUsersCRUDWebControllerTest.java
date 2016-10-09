@@ -15,19 +15,19 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.server.MasterServer;
 import ru.babobka.nodemasterserver.server.ServerContext;
-import ru.babobka.nodemasterserver.server.ServerExecutor;
 import ru.babobka.vsjws.model.HttpResponse;
 
 public class NodeUsersCRUDWebControllerTest {
 
 	// TODO 'java.net.SocketException: Broken pipe' was found. Fix it.
 
-	private static final ServerExecutor serverExecutor = new ServerExecutor(MasterServer.getInstance());
+	private static final MasterServer masterServer = MasterServer.getInstance();
 
 	private static final int PORT = ServerContext.getInstance().getConfig().getWebPort();
 
@@ -47,10 +47,10 @@ public class NodeUsersCRUDWebControllerTest {
 
 	private static final String PASSWORD_HEADER = "X-Password";
 
-	private final HttpClient httpClient = HttpClientBuilder.create().build();
+	private static final HttpClient httpClient = HttpClientBuilder.create().build();
 
 	@BeforeClass
-	public static void init() {
+	public static void setUp() {
 		normalUserJson = new JSONObject();
 		normalUserJson.put("name", USER_NAME);
 		normalUserJson.put("taskCount", 0);
@@ -58,7 +58,12 @@ public class NodeUsersCRUDWebControllerTest {
 		normalUserJson.put("email", "babobka@bk.ru");
 		badEmailUserJson = new JSONObject(normalUserJson.toString());
 		badEmailUserJson.put("email", "abc");
-		serverExecutor.run();
+		masterServer.start();
+	}
+
+	@AfterClass
+	public static void closeServer() {
+		masterServer.interrupt();
 	}
 
 	@After

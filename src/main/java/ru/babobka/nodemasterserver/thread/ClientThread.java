@@ -1,5 +1,6 @@
 package ru.babobka.nodemasterserver.thread;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Date;
@@ -168,19 +169,18 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 					}
 				}
 			} else {
-				ServerContext.getInstance().getLogger().log(Level.INFO, socket + " auth fail");
+				ServerContext.getInstance().getLogger().log(socket + " auth fail");
 			}
 
 		} catch (IOException e) {
-			if (!Thread.currentThread().isInterrupted() || !socket.isClosed()) {
+			if (!(e instanceof EOFException) && (!Thread.currentThread().isInterrupted() || !socket.isClosed())) {
 				ServerContext.getInstance().getLogger().log(e);
 			}
-			ServerContext.getInstance().getLogger().log(Level.WARNING,
-					"Connection is closed " + socket + ". " + e.getMessage());
+			ServerContext.getInstance().getLogger().log(Level.WARNING, "Connection is closed " + socket);
 		} catch (Exception e) {
 			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 		} finally {
-			ServerContext.getInstance().getLogger().log(Level.INFO, "Removing connection " + socket);
+			ServerContext.getInstance().getLogger().log("Removing connection " + socket);
 			ServerContext.getInstance().getClientThreads().remove(this);
 			synchronized (REDISTRIBUTION_LOCK) {
 				if (!requestMap.isEmpty()) {
@@ -202,6 +202,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 					ServerContext.getInstance().getLogger().log(e);
 				}
 			}
+			ServerContext.getInstance().getLogger().log("User " + login + " was disconnected");
 
 		}
 	}

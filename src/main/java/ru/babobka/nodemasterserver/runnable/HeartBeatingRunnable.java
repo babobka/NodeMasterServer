@@ -2,7 +2,6 @@ package ru.babobka.nodemasterserver.runnable;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.thread.ClientThread;
@@ -11,7 +10,7 @@ public class HeartBeatingRunnable implements Runnable {
 
 	@Override
 	public void run() {
-
+		ServerContext.getInstance().getLogger().log("Start HeartBeatingRunnable");
 		while (!Thread.currentThread().isInterrupted()) {
 			try {
 				Thread.sleep(ServerContext.getInstance().getConfig().getHeartBeatTimeOutMillis());
@@ -27,7 +26,7 @@ public class HeartBeatingRunnable implements Runnable {
 				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
-				ServerContext.getInstance().getLogger().log(Level.WARNING, e);
+				ServerContext.getInstance().getLogger().log("HeartBeatingRunnable is done");
 				break;
 			}
 

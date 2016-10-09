@@ -48,13 +48,13 @@ public class AuthServiceImpl implements AuthService {
 				BigInteger integerHashedPassword = rsa.decrypt((BigInteger) authResponse.getAddition().get("password"));
 				String login = (String) authResponse.getAddition().get("login");
 				@SuppressWarnings("unchecked")
-				LinkedList<String> uriList = (LinkedList<String>) authResponse.getAddition().get("uriList");
-				if (uriList.isEmpty()) {
+				LinkedList<String> tasksList = (LinkedList<String>) authResponse.getAddition().get("tasksList");
+				if (tasksList != null && tasksList.isEmpty()) {
 					return new AuthResult(false);
 				}
 				Set<String> taskSet = new HashSet<>();
-				for (String uri : uriList) {
-					taskSet.add(uri);
+				for (String taskName : tasksList) {
+					taskSet.add(taskName);
 				}
 				boolean authSuccess = usersService.auth(login, integerHashedPassword);
 				StreamUtil.sendObject(authSuccess, socket);

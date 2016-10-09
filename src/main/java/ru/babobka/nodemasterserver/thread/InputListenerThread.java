@@ -42,8 +42,7 @@ public class InputListenerThread extends Thread {
 				}
 			}
 		}
-		ServerContext.getInstance().getLogger()
-				.log("InputListenerThread is done. Is Interrupted " + Thread.currentThread().isInterrupted());
+		ServerContext.getInstance().getLogger().log("InputListenerThread is done");
 	}
 
 	@Override

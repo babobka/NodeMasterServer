@@ -8,7 +8,7 @@ import org.json.JSONException;
 
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.listener.OnJSONExceptionListener;
-import ru.babobka.nodemasterserver.model.ClientThreads;
+import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.runnable.HeartBeatingRunnable;
 import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.nodemasterserver.thread.InputListenerThread;
@@ -44,16 +44,37 @@ public final class MasterServer extends Thread {
 
 	private static volatile MasterServer instance;
 
-	private MasterServer() {
+	private MasterServer() throws IOException {
+		if (!RedisDatasource.getInstance().getPool().getResource().isConnected()) {
+			throw new IOException("Database is not connected");
+		}
+
+		listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getMainServerPort());
+		heartBeatingThread = new Thread(new HeartBeatingRunnable());
+		webServer = new WebServer("rest server", ServerContext.getInstance().getConfig().getWebPort(),
+				ServerContext.getInstance().getConfig().getLoggerFolder() + File.separator + "rest_log");
+		WebFilter authWebFilter = new AuthWebFilter();
+		WebFilter cacheWebFilter = new CacheWebFilter();
+		WebFilter statisticsWebFilter = new StatisticsWebFilter();
+		for (String taskName : taskPool.getTasksMap().keySet()) {
+			webServer.addController("task/" + taskName, new TaskWebController().addWebFilter(authWebFilter)
+					.addWebFilter(cacheWebFilter).addWebFilter(statisticsWebFilter));
+		}
+		webServer.addController("cancelTask", new CancelTaskWebController().addWebFilter(authWebFilter));
+		webServer.addController("clusterInfo", new ClusterInfoWebController().addWebFilter(authWebFilter));
+		webServer.addController("users", new NodeUsersCRUDWebController().addWebFilter(authWebFilter));
+		webServer.addController("tasksInfo", new TasksInfoWebController().addWebFilter(authWebFilter));
+		webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
+		webServer.addExceptionListener(JSONException.class, new OnJSONExceptionListener());
 
 	}
 
-	public static MasterServer getInstance() {
+	public static MasterServer getInstance() throws IOException {
 		MasterServer localInstance = instance;
-		if (localInstance == null) {
+		if (localInstance == null || !localInstance.isAlive()) {
 			synchronized (MasterServer.class) {
 				localInstance = instance;
-				if (localInstance == null) {
+				if (localInstance == null || !localInstance.isAlive()) {
 					instance = localInstance = new MasterServer();
 				}
 			}
@@ -64,28 +85,6 @@ public final class MasterServer extends Thread {
 	@Override
 	public void run() {
 		try {
-			if (!RedisDatasource.getInstance().getPool().getResource().isConnected()) {
-				throw new IOException("Database is not connected");
-			}
-
-			listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getMainServerPort());
-			heartBeatingThread = new Thread(new HeartBeatingRunnable());
-			webServer = new WebServer("rest server", ServerContext.getInstance().getConfig().getWebPort(), null,
-					ServerContext.getInstance().getConfig().getLoggerFolder() + File.separator + "rest_log");
-			WebFilter authWebFilter = new AuthWebFilter();
-			WebFilter cacheWebFilter = new CacheWebFilter();
-			WebFilter statisticsWebFilter = new StatisticsWebFilter();
-			for (String taskName : taskPool.getTasksMap().keySet()) {
-				webServer.addController("task/" + taskName, new TaskWebController().addWebFilter(authWebFilter)
-						.addWebFilter(cacheWebFilter).addWebFilter(statisticsWebFilter));
-			}
-			webServer.addController("cancelTask", new CancelTaskWebController().addWebFilter(authWebFilter));
-			webServer.addController("clusterInfo", new ClusterInfoWebController().addWebFilter(authWebFilter));
-			webServer.addController("users", new NodeUsersCRUDWebController().addWebFilter(authWebFilter));
-			webServer.addController("tasksInfo", new TasksInfoWebController().addWebFilter(authWebFilter));
-			webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
-			webServer.addExceptionListener(JSONException.class, new OnJSONExceptionListener());
-
 			listenerThread.start();
 			heartBeatingThread.start();
 			webServer.start();
@@ -128,14 +127,14 @@ public final class MasterServer extends Thread {
 
 			}
 		}
-		ClientThreads clientThreads = ServerContext.getInstance().getClientThreads();
-		if (clientThreads != null) {
-			clientThreads.clear();
+		Slaves slaves = ServerContext.getInstance().getSlaves();
+		if (slaves != null) {
+			slaves.clear();
 		}
 
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 		MasterServer server = new MasterServer();
 		server.start();
 

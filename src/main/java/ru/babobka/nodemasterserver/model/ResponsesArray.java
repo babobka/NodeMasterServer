@@ -3,7 +3,7 @@ package ru.babobka.nodemasterserver.model;
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
 import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.task.TaskContext;
-import ru.babobka.nodemasterserver.thread.ClientThread;
+import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodemasterserver.util.DistributionUtil;
 import ru.babobka.nodeserials.NodeRequest;
 import ru.babobka.nodeserials.NodeResponse;
@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.logging.Level;
 
 /**
  * Created by dolgopolov.a on 03.08.15.
@@ -69,15 +68,15 @@ public final class ResponsesArray {
 					if (size.intValue() == responseArray.length()) {
 						this.notifyAll();
 						if (corruptedResponseCount == size.intValue()) {
-							ServerContext.getInstance().getLogger().log(Level.INFO,
-									TASK + " " + response.getTaskId() + " was canceled");
+							ServerContext.getInstance().getLogger()
+									.log(TASK + " " + response.getTaskId() + " was canceled");
 						} else {
-							ServerContext.getInstance().getLogger().log(Level.INFO,
-									TASK + " " + response.getTaskId() + " is ready ");
+							ServerContext.getInstance().getLogger()
+									.log(TASK + " " + response.getTaskId() + " is ready ");
 						}
 					} else if (taskContext.getConfig().isRaceStyle()
 							&& taskContext.getTask().getReducer().isValidResponse(response)) {
-						List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads()
+						List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves()
 								.getListByTaskId(response.getTaskId());
 						try {
 							if (clientThreads.size() > 1) {
@@ -85,7 +84,7 @@ public final class ResponsesArray {
 										new NodeRequest(response.getTaskId(), true, response.getTaskName()));
 							}
 						} catch (EmptyClusterException e) {
-							ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
+							ServerContext.getInstance().getLogger().log(e);
 						}
 
 					}
@@ -99,7 +98,7 @@ public final class ResponsesArray {
 
 	}
 
-	synchronized void fill(NodeResponse response) {
+	public synchronized void fill(NodeResponse response) {
 
 		if (size.intValue() <= responseArray.length()) {
 			for (int i = 0; i < responseArray.length(); i++) {
@@ -108,8 +107,8 @@ public final class ResponsesArray {
 					size.incrementAndGet();
 					if (size.intValue() == responseArray.length()) {
 						this.notifyAll();
-						ServerContext.getInstance().getLogger().log(Level.INFO,
-								TASK + " " + response.getTaskId() + " is ready due to filling");
+						ServerContext.getInstance().getLogger()
+								.log(TASK + " " + response.getTaskId() + " is ready due to filling");
 						break;
 					}
 				}
@@ -129,6 +128,7 @@ public final class ResponsesArray {
 			}
 			return responses;
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			ServerContext.getInstance().getLogger().log(e);
 		}
 		return responses;

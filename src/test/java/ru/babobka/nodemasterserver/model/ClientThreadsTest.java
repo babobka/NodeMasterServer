@@ -9,7 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import ru.babobka.nodemasterserver.thread.ClientThread;
+import ru.babobka.nodemasterserver.thread.SlaveThread;
 
 
 
@@ -17,62 +17,62 @@ public class ClientThreadsTest {
 
 	private final int maxSize = 1000;
 	private final int maxThreads = 10;
-	private ClientThreads clientThreads;
-	private final ClientThread clientThreadMock = new ClientThread(new Socket());
+	private Slaves slaves;
+	private final SlaveThread clientThreadMock = new SlaveThread(new Socket());
 
 	@Before
 	public void setUp() {
-		clientThreads = new ClientThreads(maxSize);
+		slaves = new Slaves(maxSize);
 	}
 
 	@After
 	public void tearDown() {
-		clientThreads.clear();
+		slaves.clear();
 	}
 
 	@Test
 	public void testEmpty() {
-		assertTrue(clientThreads.isEmpty());
+		assertTrue(slaves.isEmpty());
 	}
 
 	@Test
 	public void testMaxSize() {
 
 		for (int i = 0; i < maxSize; i++) {
-			assertTrue(clientThreads.add(clientThreadMock));
+			assertTrue(slaves.add(clientThreadMock));
 		}
-		assertFalse(clientThreads.add(clientThreadMock));
+		assertFalse(slaves.add(clientThreadMock));
 	}
 
 	@Test
 	public void testAdd() {
 
-		assertTrue(clientThreads.add(clientThreadMock));
+		assertTrue(slaves.add(clientThreadMock));
 	}
 
 	@Test
 	public void testClear() {
-		clientThreads.add(clientThreadMock);
-		clientThreads.clear();
-		assertTrue(clientThreads.isEmpty());
+		slaves.add(clientThreadMock);
+		slaves.clear();
+		assertTrue(slaves.isEmpty());
 	}
 
 	@Test
 	public void testAddNull() {
-		assertFalse(clientThreads.add(null));
+		assertFalse(slaves.add(null));
 	}
 
 	@Test
 	public void testRemoveNull() {
-		assertFalse(clientThreads.remove(null));
+		assertFalse(slaves.remove(null));
 	}
 
 	@Test
 	public void testRemove() {
-		clientThreads.add(clientThreadMock);
-		assertFalse(clientThreads.isEmpty());
-		assertTrue(clientThreads.remove(clientThreadMock));
-		assertTrue(clientThreads.isEmpty());
+		slaves.add(clientThreadMock);
+		assertFalse(slaves.isEmpty());
+		assertTrue(slaves.remove(clientThreadMock));
+		assertTrue(slaves.isEmpty());
 	}
 
 	@Test
@@ -86,7 +86,7 @@ public class ClientThreadsTest {
 				@Override
 				public void run() {
 					for (int i = 0; i < maxSize; i++) {
-						if (clientThreads.add(clientThreadMock)) {
+						if (slaves.add(clientThreadMock)) {
 							succededAdds.incrementAndGet();
 						}
 					}
@@ -101,14 +101,14 @@ public class ClientThreadsTest {
 			addThread.join();
 		}
 		assertEquals(succededAdds.intValue(), maxSize);
-		assertEquals(clientThreads.getClusterSize(), maxSize);
-		assertEquals(clientThreads.getFullList().size(), maxSize);
+		assertEquals(slaves.getClusterSize(), maxSize);
+		assertEquals(slaves.getFullList().size(), maxSize);
 	}
 
 	@Test
 	public void testRemoveParallel() throws InterruptedException {
 		for (int i = 0; i < maxSize; i++) {
-			clientThreads.add(clientThreadMock);
+			slaves.add(clientThreadMock);
 		}
 		Thread[] removeThreads = new Thread[maxThreads];
 		final AtomicInteger succededRemoves = new AtomicInteger();
@@ -118,7 +118,7 @@ public class ClientThreadsTest {
 				@Override
 				public void run() {
 					for (int i = 0; i < maxSize; i++) {
-						if (clientThreads.remove(clientThreadMock)) {
+						if (slaves.remove(clientThreadMock)) {
 							succededRemoves.incrementAndGet();
 						}
 					}
@@ -133,9 +133,9 @@ public class ClientThreadsTest {
 			removeThread.join();
 		}
 		assertEquals(succededRemoves.intValue(), maxSize);
-		assertEquals(clientThreads.getClusterSize(), 0);
-		assertTrue(clientThreads.isEmpty());
-		assertTrue(clientThreads.getFullList().isEmpty());
+		assertEquals(slaves.getClusterSize(), 0);
+		assertTrue(slaves.isEmpty());
+		assertTrue(slaves.getFullList().isEmpty());
 	}
 
 }

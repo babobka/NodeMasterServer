@@ -28,7 +28,7 @@ import ru.babobka.nodeserials.RSA;
 /**
  * Created by dolgopolov.a on 27.07.15.
  */
-public class ClientThread extends Thread implements Comparable<ClientThread> {
+public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	private final RSA rsa;
 
@@ -48,10 +48,10 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 
 	private final Socket socket;
 
-	public ClientThread(Socket socket) {
+	public SlaveThread(Socket socket) {
 		if (socket != null) {
 			this.setName("Client Thread " + new Date());
-			ServerContext.getInstance().getLogger().log(Level.INFO, "New connection " + socket);
+			ServerContext.getInstance().getLogger().log("New connection " + socket);
 			this.socket = socket;
 			this.rsa = new RSA(RSA_KEY_BIT_LENGTH);
 		} else {
@@ -98,7 +98,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 				ServerContext.getInstance().getResponseStorage().setBadResponse(request.getTaskId());
 				try {
 					DistributionUtil.broadcastStopRequests(
-							ServerContext.getInstance().getClientThreads().getListByTaskId(request.getTaskId()),
+							ServerContext.getInstance().getSlaves().getListByTaskId(request.getTaskId()),
 							new NodeRequest(request.getTaskId(), true, request.getTaskName()));
 				} catch (EmptyClusterException e) {
 					ServerContext.getInstance().getLogger().log(e);
@@ -150,18 +150,17 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			socket.setSoTimeout(ServerContext.getInstance().getConfig().getAuthTimeOutMillis());
 			AuthResult authResult = authService.getAuthResult(rsa, socket);
 			if (authResult.isValid()) {
-				if (!ServerContext.getInstance().getClientThreads().add(this)) {
+				if (!ServerContext.getInstance().getSlaves().add(this)) {
 					throw new IllegalStateException("Cluster is full");
 				}
 				this.login = authResult.getLogin();
 				this.taskSet = authResult.getTaskSet();
-				ServerContext.getInstance().getLogger().log(Level.INFO, login + " from " + socket + " was logged");
+				ServerContext.getInstance().getLogger().log(login + " from " + socket + " was logged");
 				while (!Thread.currentThread().isInterrupted()) {
 					socket.setSoTimeout(ServerContext.getInstance().getConfig().getRequestTimeOutMillis());
 					NodeResponse response = (NodeResponse) StreamUtil.receiveObject(socket);
-
 					if (!response.isHeartBeatingResponse()) {
-						ServerContext.getInstance().getLogger().log(Level.INFO, response.toString());
+						ServerContext.getInstance().getLogger().log(response);
 						requestMap.remove(response.getResponseId());
 						if (ServerContext.getInstance().getResponseStorage().exists(response.getTaskId())) {
 							ServerContext.getInstance().getResponseStorage().get(response.getTaskId()).add(response);
@@ -178,10 +177,10 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 			}
 			ServerContext.getInstance().getLogger().log(Level.WARNING, "Connection is closed " + socket);
 		} catch (Exception e) {
-			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
+			ServerContext.getInstance().getLogger().log(e);
 		} finally {
 			ServerContext.getInstance().getLogger().log("Removing connection " + socket);
-			ServerContext.getInstance().getClientThreads().remove(this);
+			ServerContext.getInstance().getSlaves().remove(this);
 			synchronized (REDISTRIBUTION_LOCK) {
 				if (!requestMap.isEmpty()) {
 					try {
@@ -208,7 +207,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 	}
 
 	public Map<String, LinkedList<NodeRequest>> getRequestsGroupedByTask() {
-		HashMap<String, LinkedList<NodeRequest>> requestsByTaskName = new HashMap<>();
+		Map<String, LinkedList<NodeRequest>> requestsByTaskName = new HashMap<>();
 		for (Map.Entry<Long, NodeRequest> requestEntry : this.getRequestMap().entrySet()) {
 			if (requestsByTaskName.containsKey(requestEntry.getValue().getTaskName())) {
 				requestsByTaskName.get(requestEntry.getValue().getTaskName()).add(requestEntry.getValue());
@@ -226,7 +225,7 @@ public class ClientThread extends Thread implements Comparable<ClientThread> {
 	}
 
 	@Override
-	public int compareTo(ClientThread o) {
+	public int compareTo(SlaveThread o) {
 		if (o.getRequestCount() > this.getRequestCount()) {
 			return -1;
 		} else if (o.getRequestCount() < this.getRequestCount()) {

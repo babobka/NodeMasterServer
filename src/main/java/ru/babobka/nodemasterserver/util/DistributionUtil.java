@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import ru.babobka.nodemasterserver.exception.DistributionException;
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
 import ru.babobka.nodemasterserver.server.ServerContext;
-import ru.babobka.nodemasterserver.thread.ClientThread;
+import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodeserials.NodeRequest;
 
 public final class DistributionUtil {
@@ -21,10 +21,10 @@ public final class DistributionUtil {
 
 	}
 
-	public static void redistribute(ClientThread clientThread) throws DistributionException, EmptyClusterException {
+	public static void redistribute(SlaveThread clientThread) throws DistributionException, EmptyClusterException {
 
 		if (clientThread.getRequestMap().size() > 0) {
-			if (!ServerContext.getInstance().getClientThreads().isEmpty()) {
+			if (!ServerContext.getInstance().getSlaves().isEmpty()) {
 				ServerContext.getInstance().getLogger().log(Level.INFO, "Redistribution");
 				Map<String, LinkedList<NodeRequest>> requestsByUri = clientThread.getRequestsGroupedByTask();
 				for (Map.Entry<String, LinkedList<NodeRequest>> requestByUriEntry : requestsByUri.entrySet()) {
@@ -61,12 +61,12 @@ public final class DistributionUtil {
 
 	private static void broadcastRequests(String taskName, NodeRequest[] requests, int retry, int maxRetry)
 			throws EmptyClusterException, DistributionException {
-		List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads().getList(taskName);
+		List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves().getList(taskName);
 		if (clientThreads.isEmpty()) {
 			throw new EmptyClusterException();
 		} else {
 
-			Iterator<ClientThread> iterator;
+			Iterator<SlaveThread> iterator;
 			int i = 0;
 			try {
 				while (i < requests.length) {
@@ -89,13 +89,13 @@ public final class DistributionUtil {
 
 	}
 
-	public static void broadcastStopRequests(List<ClientThread> clientThreads, NodeRequest stopRequest)
+	public static void broadcastStopRequests(List<SlaveThread> clientThreads, NodeRequest stopRequest)
 			throws EmptyClusterException {
 		if (clientThreads.isEmpty()) {
 			throw new EmptyClusterException();
 		} else {
 
-			Iterator<ClientThread> iterator;
+			Iterator<SlaveThread> iterator;
 			iterator = clientThreads.iterator();
 			while (iterator.hasNext()) {
 				try {

@@ -15,7 +15,7 @@ import ru.babobka.nodemasterserver.task.TaskContext;
 import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.nodemasterserver.task.TaskResult;
 import ru.babobka.nodemasterserver.task.TaskStartResult;
-import ru.babobka.nodemasterserver.thread.ClientThread;
+import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodemasterserver.util.DistributionUtil;
 import ru.babobka.nodeserials.NodeRequest;
 import ru.babobka.subtask.model.RequestDistributor;
@@ -62,7 +62,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 		if (isRequestDataIsTooSmall(taskContext.getTask(), arguments)) {
 			currentClusterSize = 1;
 		} else {
-			currentClusterSize = ServerContext.getInstance().getClientThreads().getClusterSize(taskName);
+			currentClusterSize = ServerContext.getInstance().getSlaves().getClusterSize(taskName);
 		}
 		if (currentClusterSize < 1) {
 			throw new EmptyClusterException();
@@ -97,7 +97,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 				ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 				try {
 					DistributionUtil.broadcastStopRequests(
-							ServerContext.getInstance().getClientThreads().getListByTaskId(taskId),
+							ServerContext.getInstance().getSlaves().getListByTaskId(taskId),
 							new NodeRequest(taskId, true, requestUri));
 				} catch (EmptyClusterException e1) {
 					ServerContext.getInstance().getLogger().log(e1);
@@ -165,7 +165,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 	public HttpResponse cancelTask(HttpRequest httpRequest) {
 		try {
 			long taskId = Long.parseLong(httpRequest.getParam("taskId"));
-			List<ClientThread> clientThreads = ServerContext.getInstance().getClientThreads().getListByTaskId(taskId);
+			List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves().getListByTaskId(taskId);
 			ServerContext.getInstance().getLogger().log(Level.INFO, "Trying to cancel task " + taskId);
 			ResponsesArray responsesArray = ServerContext.getInstance().getResponseStorage().get(taskId);
 			if (responsesArray != null) {

@@ -1,6 +1,6 @@
 package ru.babobka.nodemasterserver.model;
 
-import ru.babobka.nodemasterserver.thread.ClientThread;
+import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodeserials.NodeRequest;
 
 import java.util.ArrayList;
@@ -13,19 +13,19 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 /**
  * Created by dolgopolov.a on 28.07.15.
  */
-public class ClientThreads {
+public class Slaves {
 
-	private final AtomicReferenceArray<ClientThread> threads;
+	private final AtomicReferenceArray<SlaveThread> threads;
 
 	private final AtomicInteger size = new AtomicInteger(0);
 
-	public ClientThreads(int maxSize) {
+	public Slaves(int maxSize) {
 		this.threads = new AtomicReferenceArray<>(maxSize);
 	}
 
 	public List<ClusterUser> getCurrentClusterUserList() {
 		List<ClusterUser> clusterUserList = new ArrayList<>();
-		ClientThread ct;
+		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
 			if ((ct = threads.get(i)) != null) {
 				clusterUserList
@@ -37,7 +37,7 @@ public class ClientThreads {
 		return clusterUserList;
 	}
 
-	public boolean remove(ClientThread ct) {
+	public boolean remove(SlaveThread ct) {
 		if (ct != null) {
 			for (int i = 0; i < threads.length(); i++) {
 				if (threads.get(i) == ct) {
@@ -54,7 +54,7 @@ public class ClientThreads {
 		return false;
 	}
 
-	public boolean add(ClientThread ct) {
+	public boolean add(SlaveThread ct) {
 		if (ct != null && size.intValue() != threads.length()) {
 			for (int i = 0; i < threads.length(); i++) {
 				if (threads.get(i) == null) {
@@ -71,10 +71,10 @@ public class ClientThreads {
 		return false;
 	}
 
-	public List<ClientThread> getFullList() {
-		ArrayList<ClientThread> clientThreadList = new ArrayList<>();
+	public List<SlaveThread> getFullList() {
+		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
 		for (int i = 0; i < threads.length(); i++) {
-			ClientThread ct = threads.get(i);
+			SlaveThread ct = threads.get(i);
 			if (ct != null) {
 				clientThreadList.add(ct);
 			}
@@ -83,9 +83,9 @@ public class ClientThreads {
 		return clientThreadList;
 	}
 
-	public List<ClientThread> getList(String taskName) {
-		ArrayList<ClientThread> clientThreadList = new ArrayList<>();
-		ClientThread ct;
+	public List<SlaveThread> getList(String taskName) {
+		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
+		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
 			ct = threads.get(i);
 			if (ct != null && ct.getTaskSet() != null && ct.getTaskSet().contains(taskName)) {
@@ -96,9 +96,9 @@ public class ClientThreads {
 		return clientThreadList;
 	}
 
-	public List<ClientThread> getListByTaskId(long taskId) {
-		ArrayList<ClientThread> clientThreadList = new ArrayList<>();
-		ClientThread ct;
+	public List<SlaveThread> getListByTaskId(long taskId) {
+		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
+		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
 			ct = threads.get(i);
 			if (ct != null && !ct.getRequestMap().isEmpty()) {
@@ -121,7 +121,7 @@ public class ClientThreads {
 
 	public int getClusterSize(String taskName) {
 		int counter = 0;
-		ClientThread ct;
+		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
 			ct = threads.get(i);
 			if (ct != null && ct.getTaskSet() != null && ct.getTaskSet().contains(taskName)) {
@@ -133,8 +133,8 @@ public class ClientThreads {
 
 	private void interruptAll() {
 
-		List<ClientThread> clientThreadsList = getFullList();
-		for (ClientThread ct : clientThreadsList) {
+		List<SlaveThread> clientThreadsList = getFullList();
+		for (SlaveThread ct : clientThreadsList) {
 			ct.interrupt();
 		}
 	}

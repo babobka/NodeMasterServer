@@ -7,8 +7,7 @@ import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
-
-import ru.babobka.vsjws.webcontroller.WebController;
+import ru.babobka.vsjws.runnable.WebController;
 
 public class TasksInfoWebController extends WebController {
 

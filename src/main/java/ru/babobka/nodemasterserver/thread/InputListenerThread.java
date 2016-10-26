@@ -24,7 +24,7 @@ public class InputListenerThread extends Thread {
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					Socket socket = ss.accept();
-					new ClientThread(socket).start();
+					new SlaveThread(socket).start();
 				} catch (Exception e) {
 					if (!ss.isClosed() || !Thread.currentThread().isInterrupted()) {
 						ServerContext.getInstance().getLogger().log(e);

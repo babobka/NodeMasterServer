@@ -27,7 +27,7 @@ public class NodeUsersCRUDWebControllerTest {
 
 	// TODO 'java.net.SocketException: Broken pipe' was found. Fix it.
 
-	private static final MasterServer masterServer = MasterServer.getInstance();
+	private static MasterServer masterServer;
 
 	private static final int PORT = ServerContext.getInstance().getConfig().getWebPort();
 
@@ -50,7 +50,7 @@ public class NodeUsersCRUDWebControllerTest {
 	private static final HttpClient httpClient = HttpClientBuilder.create().build();
 
 	@BeforeClass
-	public static void setUp() {
+	public static void setUp() throws IOException {
 		normalUserJson = new JSONObject();
 		normalUserJson.put("name", USER_NAME);
 		normalUserJson.put("taskCount", 0);
@@ -58,6 +58,7 @@ public class NodeUsersCRUDWebControllerTest {
 		normalUserJson.put("email", "babobka@bk.ru");
 		badEmailUserJson = new JSONObject(normalUserJson.toString());
 		badEmailUserJson.put("email", "abc");
+		masterServer = MasterServer.getInstance();
 		masterServer.start();
 	}
 
@@ -66,7 +67,7 @@ public class NodeUsersCRUDWebControllerTest {
 		masterServer.interrupt();
 	}
 
-	@After
+    @After
 	public void tearDown() throws ClientProtocolException, IOException {
 		delete(USER_NAME);
 	}

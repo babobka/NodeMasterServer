@@ -9,7 +9,7 @@ import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.subtask.model.SubTask;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
-import ru.babobka.vsjws.webcontroller.WebController;
+import ru.babobka.vsjws.runnable.WebController;
 
 public class TaskWebController extends WebController {
 

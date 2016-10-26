@@ -2,7 +2,7 @@ package ru.babobka.nodemasterserver.server;
 
 import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
-import ru.babobka.nodemasterserver.model.ClientThreads;
+import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.model.ResponseStorage;
 import ru.babobka.vsjws.logger.SimpleLogger;
 
@@ -12,7 +12,7 @@ public class ServerContext {
 
 	private final SimpleLogger logger;
 
-	private final ClientThreads clientThreads;
+	private final Slaves slaves;
 
 	private final ResponseStorage responseStorage;
 
@@ -32,7 +32,7 @@ public class ServerContext {
 			}
 			logger = new SimpleLogger("NodeServer", config.getLoggerFolder(), "server");
 			responseStorage = new ResponseStorage();
-			clientThreads = new ClientThreads(config.getMaxClients());
+			slaves = new Slaves(config.getMaxClients());
 			logger.log("ServerContext was successfuly created");
 			logger.log(config.toString());
 		} catch (Exception e) {
@@ -63,8 +63,8 @@ public class ServerContext {
 		return logger;
 	}
 
-	public ClientThreads getClientThreads() {
-		return clientThreads;
+	public Slaves getSlaves() {
+		return slaves;
 	}
 
 	public ResponseStorage getResponseStorage() {

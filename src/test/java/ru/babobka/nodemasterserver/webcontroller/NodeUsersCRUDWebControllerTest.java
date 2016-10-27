@@ -33,7 +33,7 @@ public class NodeUsersCRUDWebControllerTest {
 
 	private static final String URL = "http://localhost:" + PORT + "/users";
 
-	private static final String USER_NAME = "test_user";
+	private static final String USER_NAME = "test_rest_user";
 
 	private static JSONObject normalUserJson;
 

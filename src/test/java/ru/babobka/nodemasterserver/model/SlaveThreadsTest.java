@@ -13,12 +13,12 @@ import ru.babobka.nodemasterserver.thread.SlaveThread;
 
 
 
-public class ClientThreadsTest {
+public class SlaveThreadsTest {
 
 	private final int maxSize = 1000;
 	private final int maxThreads = 10;
 	private Slaves slaves;
-	private final SlaveThread clientThreadMock = new SlaveThread(new Socket());
+	private final SlaveThread slaveThreadMock = new SlaveThread(new Socket());
 
 	@Before
 	public void setUp() {
@@ -39,20 +39,20 @@ public class ClientThreadsTest {
 	public void testMaxSize() {
 
 		for (int i = 0; i < maxSize; i++) {
-			assertTrue(slaves.add(clientThreadMock));
+			assertTrue(slaves.add(slaveThreadMock));
 		}
-		assertFalse(slaves.add(clientThreadMock));
+		assertFalse(slaves.add(slaveThreadMock));
 	}
 
 	@Test
 	public void testAdd() {
 
-		assertTrue(slaves.add(clientThreadMock));
+		assertTrue(slaves.add(slaveThreadMock));
 	}
 
 	@Test
 	public void testClear() {
-		slaves.add(clientThreadMock);
+		slaves.add(slaveThreadMock);
 		slaves.clear();
 		assertTrue(slaves.isEmpty());
 	}
@@ -69,9 +69,9 @@ public class ClientThreadsTest {
 
 	@Test
 	public void testRemove() {
-		slaves.add(clientThreadMock);
+		slaves.add(slaveThreadMock);
 		assertFalse(slaves.isEmpty());
-		assertTrue(slaves.remove(clientThreadMock));
+		assertTrue(slaves.remove(slaveThreadMock));
 		assertTrue(slaves.isEmpty());
 	}
 
@@ -86,7 +86,7 @@ public class ClientThreadsTest {
 				@Override
 				public void run() {
 					for (int i = 0; i < maxSize; i++) {
-						if (slaves.add(clientThreadMock)) {
+						if (slaves.add(slaveThreadMock)) {
 							succededAdds.incrementAndGet();
 						}
 					}
@@ -108,7 +108,7 @@ public class ClientThreadsTest {
 	@Test
 	public void testRemoveParallel() throws InterruptedException {
 		for (int i = 0; i < maxSize; i++) {
-			slaves.add(clientThreadMock);
+			slaves.add(slaveThreadMock);
 		}
 		Thread[] removeThreads = new Thread[maxThreads];
 		final AtomicInteger succededRemoves = new AtomicInteger();
@@ -118,7 +118,7 @@ public class ClientThreadsTest {
 				@Override
 				public void run() {
 					for (int i = 0; i < maxSize; i++) {
-						if (slaves.remove(clientThreadMock)) {
+						if (slaves.remove(slaveThreadMock)) {
 							succededRemoves.incrementAndGet();
 						}
 					}

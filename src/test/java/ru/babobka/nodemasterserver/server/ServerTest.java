@@ -14,19 +14,32 @@ import ru.babobka.nodeslaveserver.server.SlaveServer;
 
 public class ServerTest {
 
-	private SlaveServer slaveServer;
+	private SlaveServer[] slaveServers;
+
+	private int slaves = 3;
 
 	private static MasterServer masterServer;
 
 	@Before
-	public void setUp() {
-		slaveServer = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(), "bbk",
-				"abc");
+	public void setUp() throws IOException {
+		slaveServers=new SlaveServer[slaves];
+		for (int i = 0; i < slaves; i++) {
+			slaveServers[i] = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(),
+					"test_user", "abc");
+		}
 	}
 
 	@After
 	public void tearDown() {
-		slaveServer.interrupt();
+		for (int i = 0; i < slaves; i++) {
+			slaveServers[i].interrupt();
+		}
+	}
+
+	public void startSlaving() {
+		for (int i = 0; i < slaves; i++) {
+			slaveServers[i].start();
+		}
 	}
 
 	@AfterClass
@@ -43,9 +56,8 @@ public class ServerTest {
 
 	@Test
 	public void logIn() throws InterruptedException {
-		slaveServer.start();
-		Thread.sleep(1000);
-		assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), 1);
+		startSlaving();
+		assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), slaves);
 	}
 
 }

@@ -15,6 +15,7 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	private final NodeUsersDAO userDAO = NodeUsersDAOImpl.getInstance();
 
 	private static volatile NodeUsersServiceImpl instance;
+	
 
 	private NodeUsersServiceImpl() {
 
@@ -92,6 +93,11 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 			return userIntegerHashedPassword.equals(integerHashedPassword);
 		}
 		return false;
+	}
+
+	@Override
+	public boolean addTestUser() {
+		return add(new User("test_user", "abc", 0, "babobka@bk.ru"));
 	}
 
 }

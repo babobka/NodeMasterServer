@@ -85,4 +85,8 @@ public class ServerContext {
 		return databaseNumber;
 	}
 
+	public boolean isProduction() {
+		return production;
+	}
+
 }

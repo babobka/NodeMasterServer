@@ -15,6 +15,8 @@ public interface NodeUsersService {
 	boolean remove(String userName);
 
 	boolean add(User user);
+	
+	boolean addTestUser();
 
 	boolean incrementTaskCount(String login);
 

@@ -17,7 +17,7 @@ public class NodeUserServiceTest {
 
 	private NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
-	private final String userName = "test_user";
+	private final String userName = "bbk_test";
 
 	private final String password = "123";
 

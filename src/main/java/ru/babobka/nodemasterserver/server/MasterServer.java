@@ -2,7 +2,6 @@ package ru.babobka.nodemasterserver.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.TimeZone;
 
 import org.json.JSONException;
 
@@ -10,6 +9,8 @@ import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.listener.OnJSONExceptionListener;
 import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.runnable.HeartBeatingRunnable;
+import ru.babobka.nodemasterserver.service.NodeUsersService;
+import ru.babobka.nodemasterserver.service.NodeUsersServiceImpl;
 import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.nodemasterserver.thread.InputListenerThread;
 import ru.babobka.nodemasterserver.webcontroller.AuthWebFilter;
@@ -30,9 +31,7 @@ import ru.babobka.vsjws.webserver.WebServer;
  */
 public final class MasterServer extends Thread {
 
-	static {
-		TimeZone.setDefault(TimeZone.getTimeZone("GMT+3"));
-	}
+	private final NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
 	private final TaskPool taskPool = TaskPool.getInstance();
 
@@ -48,7 +47,9 @@ public final class MasterServer extends Thread {
 		if (!RedisDatasource.getInstance().getPool().getResource().isConnected()) {
 			throw new IOException("Database is not connected");
 		}
-
+		if (!ServerContext.getInstance().isProduction()) {
+			userService.addTestUser();
+		}
 		listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getMainServerPort());
 		heartBeatingThread = new Thread(new HeartBeatingRunnable());
 		webServer = new WebServer("rest server", ServerContext.getInstance().getConfig().getWebPort(),

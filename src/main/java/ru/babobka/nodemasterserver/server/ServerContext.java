@@ -2,9 +2,10 @@ package ru.babobka.nodemasterserver.server;
 
 import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
+import ru.babobka.nodemasterserver.logger.SimpleLogger;
 import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.model.ResponseStorage;
-import ru.babobka.vsjws.logger.SimpleLogger;
+
 
 public class ServerContext {
 

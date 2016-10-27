@@ -37,12 +37,12 @@ public class Slaves {
 		return clusterUserList;
 	}
 
-	public boolean remove(SlaveThread ct) {
-		if (ct != null) {
+	public boolean remove(SlaveThread slave) {
+		if (slave != null) {
 			for (int i = 0; i < threads.length(); i++) {
-				if (threads.get(i) == ct) {
+				if (threads.get(i) == slave) {
 					synchronized (this) {
-						if (threads.get(i) == ct) {
+						if (threads.get(i) == slave) {
 							threads.set(i, null);
 							size.decrementAndGet();
 							return true;
@@ -54,13 +54,13 @@ public class Slaves {
 		return false;
 	}
 
-	public boolean add(SlaveThread ct) {
-		if (ct != null && size.intValue() != threads.length()) {
+	public boolean add(SlaveThread slave) {
+		if (slave != null && size.intValue() != threads.length()) {
 			for (int i = 0; i < threads.length(); i++) {
 				if (threads.get(i) == null) {
 					synchronized (this) {
 						if (threads.get(i) == null) {
-							threads.set(i, ct);
+							threads.set(i, slave);
 							size.incrementAndGet();
 							return true;
 						}

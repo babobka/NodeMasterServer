@@ -4,49 +4,26 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import ru.babobka.nodemasterserver.builder.TestUserBuilder;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
 
 public class ServerTest {
 
-	private SlaveServer[] slaveServers;
+	private static SlaveServer[] slaveServers;
 
-	private int slaves = 3;
+	private static final int SLAVES = 5;
 
 	private static MasterServer masterServer;
 
-	@Before
-	public void setUp() throws IOException {
-		slaveServers=new SlaveServer[slaves];
-		for (int i = 0; i < slaves; i++) {
-			slaveServers[i] = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(),
-					"test_user", "abc");
-		}
-	}
+	private static final String LOGIN = TestUserBuilder.LOGIN;
 
-	@After
-	public void tearDown() {
-		for (int i = 0; i < slaves; i++) {
-			slaveServers[i].interrupt();
-		}
-	}
+	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
-	public void startSlaving() {
-		for (int i = 0; i < slaves; i++) {
-			slaveServers[i].start();
-		}
-	}
-
-	@AfterClass
-	public static void closeMasterServer() {
-		if (masterServer != null)
-			masterServer.interrupt();
-	}
+	private static final int TESTS = 5;
 
 	@BeforeClass
 	public static void runMasterServer() throws IOException {
@@ -54,10 +31,98 @@ public class ServerTest {
 		masterServer.start();
 	}
 
+	@AfterClass
+	public static void closeServers() {
+		closeSlaves();
+		closeMasterServer();
+
+	}
+
 	@Test
-	public void logIn() throws InterruptedException {
-		startSlaving();
-		assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), slaves);
+	public void logInMass() throws IOException {
+		for (int i = 0; i < TESTS; i++) {
+			createSlaves();
+			startSlaves();
+			assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
+			closeSlaves();
+		}
+	}
+
+	@Test
+	public void logOutMass() throws IOException, InterruptedException {
+		for (int i = 0; i < TESTS; i++) {
+			createSlaves();
+			startSlaves();
+			closeSlaves();
+			Thread.sleep(500);
+			assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), 0);
+		}
+	}
+
+	@Test
+	public void logFailBadAddress() {
+
+		try {
+			new SlaveServer("localhost123", ServerContext.getInstance().getConfig().getMainServerPort(), "test_user",
+					"abc");
+			fail();
+		} catch (IOException e) {
+
+		}
+
+	}
+
+	@Test
+	public void logFailBadPassword() {
+		try {
+			new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(), LOGIN + "abc",
+					PASSWORD);
+			fail();
+		} catch (IOException e) {
+
+		}
+	}
+
+	public static void createSlaves() throws IOException {
+		slaveServers = new SlaveServer[SLAVES];
+		for (int i = 0; i < SLAVES; i++) {
+			slaveServers[i] = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(),
+					LOGIN, PASSWORD);
+		}
+	}
+
+	public static void startSlaves() {
+		for (int i = 0; i < SLAVES; i++) {
+			slaveServers[i].start();
+		}
+	}
+
+	public static void closeSlaves() {
+		for (int i = 0; i < SLAVES; i++) {
+			slaveServers[i].interrupt();
+		}
+
+		for (int i = 0; i < SLAVES; i++) {
+			try {
+				slaveServers[i].join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+	}
+
+	public static void closeMasterServer() {
+
+		if (masterServer != null)
+			masterServer.interrupt();
+		try {
+			if (masterServer != null)
+				masterServer.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 }

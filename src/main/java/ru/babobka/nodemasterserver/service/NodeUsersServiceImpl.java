@@ -3,6 +3,7 @@ package ru.babobka.nodemasterserver.service;
 import java.math.BigInteger;
 import java.util.List;
 
+import ru.babobka.nodemasterserver.builder.TestUserBuilder;
 import ru.babobka.nodemasterserver.dao.NodeUsersDAO;
 import ru.babobka.nodemasterserver.dao.NodeUsersDAOImpl;
 import ru.babobka.nodemasterserver.model.User;
@@ -97,7 +98,7 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 
 	@Override
 	public boolean addTestUser() {
-		return add(new User("test_user", "abc", 0, "babobka@bk.ru"));
+		return add(TestUserBuilder.build());
 	}
 
 }

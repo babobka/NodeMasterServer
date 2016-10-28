@@ -15,14 +15,14 @@ import ru.babobka.nodemasterserver.thread.SlaveThread;
 
 public class SlaveThreadsTest {
 
-	private final int maxSize = 1000;
+	private final int n = 1000;
 	private final int maxThreads = 10;
 	private Slaves slaves;
 	private final SlaveThread slaveThreadMock = new SlaveThread(new Socket());
 
 	@Before
 	public void setUp() {
-		slaves = new Slaves(maxSize);
+		slaves = new Slaves(n);
 	}
 
 	@After
@@ -38,7 +38,7 @@ public class SlaveThreadsTest {
 	@Test
 	public void testMaxSize() {
 
-		for (int i = 0; i < maxSize; i++) {
+		for (int i = 0; i < n; i++) {
 			assertTrue(slaves.add(slaveThreadMock));
 		}
 		assertFalse(slaves.add(slaveThreadMock));
@@ -85,7 +85,7 @@ public class SlaveThreadsTest {
 
 				@Override
 				public void run() {
-					for (int i = 0; i < maxSize; i++) {
+					for (int i = 0; i < n; i++) {
 						if (slaves.add(slaveThreadMock)) {
 							succededAdds.incrementAndGet();
 						}
@@ -100,14 +100,14 @@ public class SlaveThreadsTest {
 		for (Thread addThread : addThreads) {
 			addThread.join();
 		}
-		assertEquals(succededAdds.intValue(), maxSize);
-		assertEquals(slaves.getClusterSize(), maxSize);
-		assertEquals(slaves.getFullList().size(), maxSize);
+		assertEquals(succededAdds.intValue(), n);
+		assertEquals(slaves.getClusterSize(), n);
+		assertEquals(slaves.getFullList().size(), n);
 	}
 
 	@Test
 	public void testRemoveParallel() throws InterruptedException {
-		for (int i = 0; i < maxSize; i++) {
+		for (int i = 0; i < n; i++) {
 			slaves.add(slaveThreadMock);
 		}
 		Thread[] removeThreads = new Thread[maxThreads];
@@ -117,7 +117,7 @@ public class SlaveThreadsTest {
 
 				@Override
 				public void run() {
-					for (int i = 0; i < maxSize; i++) {
+					for (int i = 0; i < n; i++) {
 						if (slaves.remove(slaveThreadMock)) {
 							succededRemoves.incrementAndGet();
 						}
@@ -132,7 +132,7 @@ public class SlaveThreadsTest {
 		for (Thread removeThread : removeThreads) {
 			removeThread.join();
 		}
-		assertEquals(succededRemoves.intValue(), maxSize);
+		assertEquals(succededRemoves.intValue(), n);
 		assertEquals(slaves.getClusterSize(), 0);
 		assertTrue(slaves.isEmpty());
 		assertTrue(slaves.getFullList().isEmpty());

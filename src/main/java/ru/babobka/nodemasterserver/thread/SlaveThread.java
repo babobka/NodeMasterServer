@@ -34,7 +34,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	private volatile Set<String> taskSet;
 
-	private static final int RSA_KEY_BIT_LENGTH = 512;
+	private static final int RSA_KEY_BIT_LENGTH = 256;
 
 	private final NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
@@ -75,7 +75,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		return requestMap;
 	}
 
-	public synchronized void sendRequest(NodeRequest request) throws IOException {
+	public void sendRequest(NodeRequest request) throws IOException {
 
 		if (!(request.isRaceStyle() && requestMap.containsKey(request.getTaskId()))) {
 			StreamUtil.sendObject(request, socket);
@@ -95,7 +95,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 			NodeRequest request;
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
-				ServerContext.getInstance().getResponseStorage().setBadResponse(request.getTaskId());
+				ServerContext.getInstance().getResponseStorage().addBadResponse(request.getTaskId());
 				try {
 					DistributionUtil.broadcastStopRequests(
 							ServerContext.getInstance().getSlaves().getListByTaskId(request.getTaskId()),
@@ -113,26 +113,26 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 			NodeRequest request;
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
-				ServerContext.getInstance().getResponseStorage().setBadResponse(request.getTaskId());
+				ServerContext.getInstance().getResponseStorage().addBadResponse(request.getTaskId());
 			}
 			requestMap.clear();
 		}
 	}
 
-	public synchronized void sendHeartBeating() throws IOException {
+	public void sendHeartBeating() throws IOException {
 
 		StreamUtil.sendObject(NodeRequest.heartBeatRequest(), socket);
 
 	}
 
-	public synchronized void sendStopRequest(NodeRequest stopRequest) throws IOException {
+	public void sendStopRequest(NodeRequest stopRequest) throws IOException {
 		try {
 			StreamUtil.sendObject(stopRequest, socket);
 		} finally {
 
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				if (requestEntry.getValue().getTaskId() == stopRequest.getTaskId()) {
-					ServerContext.getInstance().getResponseStorage().setStopResponse(stopRequest.getTaskId());
+					ServerContext.getInstance().getResponseStorage().addStopResponse(stopRequest.getTaskId());
 					requestMap.remove(requestEntry.getValue().getRequestId());
 				}
 			}

@@ -18,12 +18,12 @@ public class Slaves {
 	private final AtomicReferenceArray<SlaveThread> threads;
 
 	private final AtomicInteger size = new AtomicInteger(0);
-
+	
 	public Slaves(int maxSize) {
 		this.threads = new AtomicReferenceArray<>(maxSize);
 	}
 
-	public List<ClusterUser> getCurrentClusterUserList() {
+	public synchronized List<ClusterUser> getCurrentClusterUserList() {
 		List<ClusterUser> clusterUserList = new ArrayList<>();
 		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
@@ -71,7 +71,7 @@ public class Slaves {
 		return false;
 	}
 
-	public List<SlaveThread> getFullList() {
+	public synchronized List<SlaveThread> getFullList() {
 		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
 		for (int i = 0; i < threads.length(); i++) {
 			SlaveThread ct = threads.get(i);
@@ -83,8 +83,8 @@ public class Slaves {
 		return clientThreadList;
 	}
 
-	public List<SlaveThread> getList(String taskName) {
-		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
+	public synchronized List<SlaveThread> getList(String taskName) {
+		List<SlaveThread> clientThreadList = new ArrayList<>();
 		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
 			ct = threads.get(i);
@@ -96,8 +96,8 @@ public class Slaves {
 		return clientThreadList;
 	}
 
-	public List<SlaveThread> getListByTaskId(long taskId) {
-		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
+	public synchronized List<SlaveThread> getListByTaskId(long taskId) {
+		List<SlaveThread> clientThreadList = new ArrayList<>();
 		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
 			ct = threads.get(i);
@@ -119,7 +119,7 @@ public class Slaves {
 		return size.intValue();
 	}
 
-	public int getClusterSize(String taskName) {
+	public synchronized int getClusterSize(String taskName) {
 		int counter = 0;
 		SlaveThread ct;
 		for (int i = 0; i < threads.length(); i++) {
@@ -131,15 +131,21 @@ public class Slaves {
 		return counter;
 	}
 
-	private void interruptAll() {
+	private synchronized void interruptAll() {
 
 		List<SlaveThread> clientThreadsList = getFullList();
 		for (SlaveThread ct : clientThreadsList) {
 			ct.interrupt();
+			try {
+				ct.join();
+			} catch (InterruptedException e) {
+				ct.interrupt();
+				e.printStackTrace();
+			}
 		}
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		if (!isEmpty()) {
 			synchronized (this) {
 				if (!isEmpty()) {

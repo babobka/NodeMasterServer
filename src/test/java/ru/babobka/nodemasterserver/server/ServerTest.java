@@ -54,7 +54,7 @@ public class ServerTest {
 			createSlaves();
 			startSlaves();
 			closeSlaves();
-			Thread.sleep(500);
+			Thread.sleep(200);
 			assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), 0);
 		}
 	}

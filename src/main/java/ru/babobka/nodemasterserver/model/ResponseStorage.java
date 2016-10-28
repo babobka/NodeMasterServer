@@ -17,40 +17,41 @@ public class ResponseStorage {
 		responsesMap = new ConcurrentHashMap<>();
 	}
 
-	public void put(Long id, ResponsesArray responses) {
-		responsesMap.put(id, responses);
+	public void put(long taskId, ResponsesArray responses) {
+		responsesMap.put(taskId, responses);
 	}
 
-	public ResponsesArray get(Long id) {
-		return responsesMap.get(id);
+	public ResponsesArray get(long taskId) {
+
+		return responsesMap.get(taskId);
 	}
 
 	public boolean exists(long taskId) {
 		return responsesMap.containsKey(taskId);
 	}
 
-	public synchronized void setBadResponse(Long taskId) {
+	public void addBadResponse(long taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			responsesArray.add(NodeResponse.badResponse(taskId));
 		}
 	}
 
-	public synchronized void setStopResponse(Long taskId) {
+	public void addStopResponse(long taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			responsesArray.add(NodeResponse.stoppedResponse(taskId));
 		}
 	}
 
-	public synchronized void setStopAllResponses(Long taskId) {
+	public void setStopAllResponses(long taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			responsesArray.fill(NodeResponse.stoppedResponse(taskId));
 		}
 	}
 
-	public Map<Long, ResponsesArrayMeta> getRunningTasksMetaMap() {
+	public synchronized Map<Long, ResponsesArrayMeta> getRunningTasksMetaMap() {
 		Map<Long, ResponsesArrayMeta> taskMap = new HashMap<>();
 		for (Map.Entry<Long, ResponsesArray> entry : responsesMap.entrySet()) {
 			if (!entry.getValue().isComplete()) {
@@ -60,12 +61,16 @@ public class ResponseStorage {
 		return taskMap;
 	}
 
-	public ResponsesArrayMeta getTaskMeta(Long taskId) {
-		return responsesMap.get(taskId).getMeta();
+	public ResponsesArrayMeta getTaskMeta(long taskId) {
+		ResponsesArray responsesArray = responsesMap.get(taskId);
+		if (responsesArray != null) {
+			return responsesArray.getMeta();
+		}
+		return null;
 	}
 
-	public void clear(long id) {
-		responsesMap.remove(id);
+	public synchronized void clear(long taskId) {
+		responsesMap.remove(taskId);
 	}
 
 }

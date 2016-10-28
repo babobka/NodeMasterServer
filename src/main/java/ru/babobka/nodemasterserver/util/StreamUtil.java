@@ -122,11 +122,13 @@ public final class StreamUtil {
 	}
 
 	public static void sendObject(Object object, Socket socket) throws IOException {
-		byte[] message = objectToByteArray(object);
-		DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
-		dOut.writeInt(message.length); // write length of the message
-		dOut.write(message);
-		socket.getOutputStream().flush();
+		synchronized (socket) {
+			byte[] message = objectToByteArray(object);
+			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
+			dOut.writeInt(message.length); // write length of the message
+			dOut.write(message);
+			socket.getOutputStream().flush();
+		}
 	}
 
 	public static Object receiveObject(Socket socket) throws IOException {
@@ -135,7 +137,6 @@ public final class StreamUtil {
 		if (length > 0) {
 			byte[] message = new byte[length];
 			dIn.readFully(message, 0, message.length);
-
 			return byteArrayToObject(message);
 
 		}

@@ -16,7 +16,6 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	private final NodeUsersDAO userDAO = NodeUsersDAOImpl.getInstance();
 
 	private static volatile NodeUsersServiceImpl instance;
-	
 
 	private NodeUsersServiceImpl() {
 
@@ -54,7 +53,11 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	@Override
 	public boolean add(User user) {
 		if (!userDAO.exists(user.getName())) {
-			return userDAO.add(user);
+			synchronized (this) {
+				if (!userDAO.exists(user.getName())) {
+					return userDAO.add(user);
+				}
+			}
 		}
 		return false;
 

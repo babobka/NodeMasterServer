@@ -21,28 +21,27 @@ import ru.babobka.nodeserials.NodeRequest;
 import ru.babobka.subtask.model.RequestDistributor;
 import ru.babobka.subtask.model.SubTask;
 import ru.babobka.vsjws.model.HttpRequest;
-import ru.babobka.vsjws.model.HttpResponse;
-import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
 
-public class HttpTaskServiceImpl implements HttpTaskService {
+
+public class TaskServiceImpl implements TaskService {
 
 	private static TaskPool taskPool = TaskPool.getInstance();
 
 	private static final String WRONG_ARGUMENTS = "Wrong arguments";
 
-	private static volatile HttpTaskServiceImpl instance;
+	private static volatile TaskServiceImpl instance;
 
-	private HttpTaskServiceImpl() {
+	private TaskServiceImpl() {
 
 	}
 
-	public static HttpTaskServiceImpl getInstance() {
-		HttpTaskServiceImpl localInstance = instance;
+	public static TaskServiceImpl getInstance() {
+		TaskServiceImpl localInstance = instance;
 		if (localInstance == null) {
-			synchronized (HttpTaskServiceImpl.class) {
+			synchronized (TaskServiceImpl.class) {
 				localInstance = instance;
 				if (localInstance == null) {
-					instance = localInstance = new HttpTaskServiceImpl();
+					instance = localInstance = new TaskServiceImpl();
 				}
 			}
 		}
@@ -86,10 +85,10 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 	}
 
 	private TaskStartResult startTask(HttpRequest request, TaskContext taskContext, long taskId) {
-		String requestUri = getTaskName(request);
+
 		RequestDistributor requestDistributor = taskContext.getTask().getDistributor();
 		if (requestDistributor.isValidArguments(request.getUrlParams())) {
-			ServerContext.getInstance().getLogger().log(Level.INFO, "Task id is " + taskId);
+			ServerContext.getInstance().getLogger().log("Task id is " + taskId);
 			try {
 				startTask(taskContext, taskId, request.getUrlParams());
 				return new TaskStartResult(taskId);
@@ -98,7 +97,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 				try {
 					DistributionUtil.broadcastStopRequests(
 							ServerContext.getInstance().getSlaves().getListByTaskId(taskId),
-							new NodeRequest(taskId, true, requestUri));
+							new NodeRequest(taskId, true, getTaskName(request)));
 				} catch (EmptyClusterException e1) {
 					ServerContext.getInstance().getLogger().log(e1);
 				}
@@ -133,7 +132,7 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 	}
 
 	@Override
-	public HttpResponse getResult(HttpRequest request, TaskContext taskContext) {
+	public TaskResult getResult(HttpRequest request, TaskContext taskContext) {
 
 		Map<String, Serializable> resultMap;
 
@@ -144,16 +143,14 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 				Timer timer = new Timer();
 				resultMap = getTaskResult(startResult.getTaskId());
 				if (resultMap != null) {
-					return HttpResponse.jsonResponse(new TaskResult(timer.getTimePassed(), resultMap));
+					return new TaskResult(timer.getTimePassed(), resultMap);
 				} else {
-					return HttpResponse.jsonResponse(new TaskResult("Can not find result"),
-							ResponseCode.INTERNAL_SERVER_ERROR);
+					throw new IllegalStateException("Can not find result");
 				}
 			} else if (startResult.isSystemError()) {
-				return HttpResponse.jsonResponse(new TaskResult(startResult.getMessage()),
-						ResponseCode.INTERNAL_SERVER_ERROR);
+				throw new IllegalStateException("System error");
 			} else {
-				return HttpResponse.jsonResponse(new TaskResult(startResult.getMessage()), ResponseCode.BAD_REQUEST);
+				throw new IllegalArgumentException(startResult.getMessage());
 			}
 		} finally {
 			ServerContext.getInstance().getResponseStorage().clear(taskId);
@@ -162,29 +159,26 @@ public class HttpTaskServiceImpl implements HttpTaskService {
 	}
 
 	@Override
-	public HttpResponse cancelTask(HttpRequest httpRequest) {
+	public TaskResult cancelTask(HttpRequest httpRequest) {
 		try {
 			long taskId = Long.parseLong(httpRequest.getParam("taskId"));
 			List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves().getListByTaskId(taskId);
-			ServerContext.getInstance().getLogger().log(Level.INFO, "Trying to cancel task " + taskId);
+			ServerContext.getInstance().getLogger().log("Trying to cancel task " + taskId);
 			ResponsesArray responsesArray = ServerContext.getInstance().getResponseStorage().get(taskId);
 			if (responsesArray != null) {
 				DistributionUtil.broadcastStopRequests(clientThreads,
 						new NodeRequest(taskId, true, responsesArray.getMeta().getTaskName()));
 				ServerContext.getInstance().getResponseStorage().setStopAllResponses(taskId);
-				return HttpResponse.jsonResponse(new TaskResult("Task " + taskId + " was canceled"));
+				return new TaskResult("Task " + taskId + " was canceled");
 			} else {
 				ServerContext.getInstance().getLogger().log(Level.SEVERE, "No task was found for given task id");
-				return HttpResponse.jsonResponse(new TaskResult("No task was found for given task id"),
-						ResponseCode.BAD_REQUEST);
+				throw new IllegalArgumentException("No task was found for given task id");
 			}
 		} catch (NumberFormatException e) {
-			ServerContext.getInstance().getLogger().log(Level.SEVERE, WRONG_ARGUMENTS);
-			return HttpResponse.jsonResponse(new TaskResult(WRONG_ARGUMENTS), ResponseCode.BAD_REQUEST);
+			throw new IllegalArgumentException(WRONG_ARGUMENTS, e);
 		} catch (EmptyClusterException e) {
 			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
-			return HttpResponse.jsonResponse(new TaskResult("Can not cancel task due to empty cluster"),
-					ResponseCode.INTERNAL_SERVER_ERROR);
+			throw new IllegalStateException("Can not cancel task due to empty cluster", e);
 		}
 	}
 

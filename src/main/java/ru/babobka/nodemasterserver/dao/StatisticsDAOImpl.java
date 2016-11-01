@@ -1,6 +1,5 @@
 package ru.babobka.nodemasterserver.dao;
 
-
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
@@ -35,11 +34,8 @@ public class StatisticsDAOImpl implements StatisticsDAO {
 
 	@Override
 	public void incrementRequests() {
-		Jedis jedis = null;
-		Transaction t = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
-			t = jedis.multi();
+
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource(); Transaction t = jedis.multi();) {
 			String monthDate = DateUtil.getMonthYear();
 			int currentHour = DateUtil.getCurrentHour();
 			boolean expireable = false;
@@ -54,13 +50,6 @@ public class StatisticsDAOImpl implements StatisticsDAO {
 			t.exec();
 		} catch (Exception e) {
 			ServerContext.getInstance().getLogger().log(e);
-			if (t != null) {
-				t.discard();
-			}
-		} finally {
-			if (jedis != null) {
-				jedis.close();
-			}
 		}
 	}
 

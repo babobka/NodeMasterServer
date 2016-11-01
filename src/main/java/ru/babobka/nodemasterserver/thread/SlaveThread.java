@@ -75,23 +75,22 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		return requestMap;
 	}
 
-	public void sendRequest(NodeRequest request) throws IOException {
+	public synchronized void sendRequest(NodeRequest request) throws IOException {
 
 		if (!(request.isRaceStyle() && requestMap.containsKey(request.getTaskId()))) {
 			StreamUtil.sendObject(request, socket);
 			requestMap.put(request.getRequestId(), request);
 			userService.incrementTaskCount(login);
-			ServerContext.getInstance().getLogger().log(Level.INFO, "sendRequest " + request);
+			ServerContext.getInstance().getLogger().log("sendRequest " + request);
 		} else {
-			ServerContext.getInstance().getLogger().log(Level.INFO,
-					"Request  " + request + " was ignored due to race style");
+			ServerContext.getInstance().getLogger().log("Request  " + request + " was ignored due to race style");
 			ServerContext.getInstance().getResponseStorage().get(request.getTaskId())
 					.add(NodeResponse.dummyResponse(request.getTaskId()));
 		}
 	}
 
-	private void setBadAndCancelAllTheRequests() {
-		if (requestMap.size() != 0) {
+	private synchronized void setBadAndCancelAllTheRequests() {
+		if (!requestMap.isEmpty()) {
 			NodeRequest request;
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
@@ -108,7 +107,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		}
 	}
 
-	private void setBadAllTheRequests() {
+	private synchronized void setBadAllTheRequests() {
 		if (!requestMap.isEmpty()) {
 			NodeRequest request;
 			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
@@ -125,7 +124,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	}
 
-	public void sendStopRequest(NodeRequest stopRequest) throws IOException {
+	public synchronized void sendStopRequest(NodeRequest stopRequest) throws IOException {
 		try {
 			StreamUtil.sendObject(stopRequest, socket);
 		} finally {

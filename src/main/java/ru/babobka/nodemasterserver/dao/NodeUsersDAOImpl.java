@@ -1,5 +1,6 @@
 package ru.babobka.nodemasterserver.dao;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +10,7 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.model.User;
+import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.util.MathUtil;
 
 public class NodeUsersDAOImpl implements NodeUsersDAO {
@@ -43,24 +45,18 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 	}
 
 	private Integer getUserId(String login) {
-		Jedis jedis = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			String value = jedis.hget(USERS_KEY, login);
 			if (value != null) {
 				return Integer.parseInt(value);
 			}
-		} finally {
-			if (jedis != null)
-				jedis.close();
 		}
 		return null;
 	}
 
 	private User get(String login, int id) {
-		Jedis jedis = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			Map<byte[], byte[]> map = jedis.hgetAll((USER_KEY + id).getBytes());
 			String email = null;
 			if (map.get(EMAIL) != null) {
@@ -73,12 +69,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			byte[] hashedPassword = map.get(HASHED_PASSWORD);
 
 			return new User(login, hashedPassword, taskCount, email);
-
-		} finally {
-			if (jedis != null)
-				jedis.close();
 		}
-
 	}
 
 	@Override
@@ -93,27 +84,19 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 
 	@Override
 	public List<User> getList() {
-		ArrayList<User> users = new ArrayList<>();
-		Jedis jedis = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+		List<User> users = new ArrayList<>();
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			Map<String, String> map = jedis.hgetAll(USERS_KEY);
 			for (Map.Entry<String, String> entry : map.entrySet()) {
 				users.add(get(entry.getKey(), Integer.parseInt(entry.getValue())));
 			}
-		} finally {
-			if (jedis != null)
-				jedis.close();
 		}
 		return users;
 	}
 
 	@Override
 	public boolean add(User user) {
-		Jedis jedis = null;
-		Transaction t = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource(); Transaction t = jedis.multi();) {
 			long usersCount = jedis.incr("users_count:");
 			Map<byte[], byte[]> userMap = new HashMap<>();
 			if (user.getEmail() != null) {
@@ -126,14 +109,13 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 
 			Map<String, String> loginIdMap = new HashMap<>();
 			loginIdMap.put(user.getName(), String.valueOf(usersCount));
-			t = jedis.multi();
 			t.hmset(USERS_KEY, loginIdMap);
 			t.hmset((USER_KEY + usersCount).getBytes(), userMap);
 			t.exec();
 			return true;
-		} finally {
-			if (jedis != null)
-				jedis.close();
+		} catch (Exception e) {
+			ServerContext.getInstance().getLogger().log(e);
+			return false;
 		}
 
 	}
@@ -141,10 +123,8 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 	@Override
 	public boolean remove(String login) {
 
-		Jedis jedis = null;
 		Transaction t = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			Integer userId = getUserId(login);
 			if (userId != null) {
 				t = jedis.multi();
@@ -155,24 +135,22 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			}
 			return false;
 		} catch (Exception e) {
-
-			if (t != null) {
-				t.discard();
-			}
-			throw e;
+			ServerContext.getInstance().getLogger().log(e);
+			return false;
 		} finally {
-			if (jedis != null)
-				jedis.close();
+			if (t != null)
+				try {
+					t.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 		}
 	}
 
 	@Override
 	public boolean update(String login, String newLogin, String password, String email, Integer taskCount) {
-		Jedis jedis = null;
-		Transaction t = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
-			t = jedis.multi();
+
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource(); Transaction t = jedis.multi();) {
 			Integer userId = getUserId(login);
 			if (userId != null) {
 				if (newLogin != null && !newLogin.equals(login)) {
@@ -193,48 +171,34 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 				t.exec();
 				return true;
 			}
-		} catch (Exception e) {
-			if (t != null) {
-				t.discard();
-			}
-			throw e;
-		} finally {
 
-			if (jedis != null)
-				jedis.close();
+		} catch (Exception e) {
+			ServerContext.getInstance().getLogger().log(e);
 		}
 		return false;
+
 	}
 
 	@Override
 	public boolean incrTaskCount(String login) {
-		Jedis jedis = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			Integer userId = getUserId(login);
 			if (userId != null) {
 				jedis.hincrBy(USER_KEY + userId, new String(TASK_COUNT), 1L);
 				return true;
 			}
-		} finally {
-			if (jedis != null)
-				jedis.close();
 		}
 		return false;
 	}
 
 	@Override
 	public boolean exists(String login) {
-		Jedis jedis = null;
-		try {
-			jedis = RedisDatasource.getInstance().getPool().getResource();
+
+		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			Integer userId = getUserId(login);
 			if (userId != null) {
 				return true;
 			}
-		} finally {
-			if (jedis != null)
-				jedis.close();
 		}
 		return false;
 	}

@@ -2,6 +2,7 @@ package ru.babobka.nodemasterserver.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 
 import org.json.JSONException;
 
@@ -58,8 +59,8 @@ public final class MasterServer extends Thread {
 		WebFilter cacheWebFilter = new CacheWebFilter();
 		WebFilter statisticsWebFilter = new StatisticsWebFilter();
 		for (String taskName : taskPool.getTasksMap().keySet()) {
-			webServer.addController("task/" + taskName, new TaskWebController().addWebFilter(authWebFilter)
-					.addWebFilter(cacheWebFilter).addWebFilter(statisticsWebFilter));
+			webServer.addController("task/" + URLEncoder.encode(taskName, "UTF-8"), new TaskWebController()
+					.addWebFilter(authWebFilter).addWebFilter(cacheWebFilter).addWebFilter(statisticsWebFilter));
 		}
 		webServer.addController("cancelTask", new CancelTaskWebController().addWebFilter(authWebFilter));
 		webServer.addController("clusterInfo", new ClusterInfoWebController().addWebFilter(authWebFilter));
@@ -67,6 +68,8 @@ public final class MasterServer extends Thread {
 		webServer.addController("tasksInfo", new TasksInfoWebController().addWebFilter(authWebFilter));
 		webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
 		webServer.addExceptionListener(JSONException.class, new OnJSONExceptionListener());
+		webServer.addExceptionListener(IllegalArgumentException.class, new OnJSONExceptionListener());
+		webServer.addExceptionListener(IllegalStateException.class, new OnJSONExceptionListener());
 
 	}
 

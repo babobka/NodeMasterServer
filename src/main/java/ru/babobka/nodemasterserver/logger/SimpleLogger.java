@@ -20,7 +20,7 @@ public class SimpleLogger {
 	}
 
 	public void log(Level level, Exception e) {
-		logger.log(level, getStringFromException(e));
+		log(level, getStringFromException(e));
 	}
 
 	
@@ -29,15 +29,15 @@ public class SimpleLogger {
 	}
 	
 	public void log(String message) {
-		logger.log(Level.INFO, message);
+		log(Level.INFO, message);
 	}
 
 	public void log(String message, Exception e) {
-		logger.log(Level.SEVERE, message + "\t" + getStringFromException(e));
+		log(Level.SEVERE, message + "\t" + getStringFromException(e));
 	}
 
 	public void log(Exception e) {
-		logger.log(Level.SEVERE, getStringFromException(e));
+		log(Level.SEVERE, getStringFromException(e));
 	}
  
 	private static String getStringFromException(Exception ex) {

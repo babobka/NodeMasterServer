@@ -9,6 +9,7 @@ import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.exception.CanNotInitTaskFactoryException;
 import ru.babobka.nodemasterserver.exception.EmptyFactoryPoolException;
+import ru.babobka.nodemasterserver.exception.TaskNotFoundException;
 import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.subtask.model.SubTask;
@@ -72,12 +73,11 @@ public class TaskPool {
 	}
 
 	public TaskContext get(String name) throws IOException {
-
 		TaskContext taskContext = tasksMap.get(name);
 		if (taskContext != null) {
 			return taskContext.newInstance();
 		} else {
-			throw new IOException("Task " + name + " was not found");
+			throw new TaskNotFoundException("Task " + name + " was not found");
 		}
 
 	}

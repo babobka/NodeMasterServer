@@ -44,8 +44,6 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	private volatile String login;
 
-	private static final Object REDISTRIBUTION_LOCK = new Object();
-
 	private final Socket socket;
 
 	public SlaveThread(Socket socket) {
@@ -76,12 +74,12 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 	}
 
 	public synchronized void sendRequest(NodeRequest request) throws IOException {
-
+		ServerContext.getInstance().getLogger().log("sendRequest " + request);
 		if (!(request.isRaceStyle() && requestMap.containsKey(request.getTaskId()))) {
-			StreamUtil.sendObject(request, socket);
 			requestMap.put(request.getRequestId(), request);
+			StreamUtil.sendObject(request, socket);
+			ServerContext.getInstance().getLogger().log(request+" was sent");
 			userService.incrementTaskCount(login);
-			ServerContext.getInstance().getLogger().log("sendRequest " + request);
 		} else {
 			ServerContext.getInstance().getLogger().log("Request  " + request + " was ignored due to race style");
 			ServerContext.getInstance().getResponseStorage().get(request.getTaskId())
@@ -159,8 +157,9 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 					socket.setSoTimeout(ServerContext.getInstance().getConfig().getRequestTimeOutMillis());
 					NodeResponse response = (NodeResponse) StreamUtil.receiveObject(socket);
 					if (!response.isHeartBeatingResponse()) {
-						ServerContext.getInstance().getLogger().log(response);
+						ServerContext.getInstance().getLogger().log("Got response "+response);
 						requestMap.remove(response.getResponseId());
+						ServerContext.getInstance().getLogger().log("Remove response "+response.getResponseId());
 						if (ServerContext.getInstance().getResponseStorage().exists(response.getTaskId())) {
 							ServerContext.getInstance().getResponseStorage().get(response.getTaskId()).add(response);
 						}
@@ -180,7 +179,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		} finally {
 			ServerContext.getInstance().getLogger().log("Removing connection " + socket);
 			ServerContext.getInstance().getSlaves().remove(this);
-			synchronized (REDISTRIBUTION_LOCK) {
+			synchronized (SlaveThread.class) {
 				if (!requestMap.isEmpty()) {
 					try {
 						DistributionUtil.redistribute(this);

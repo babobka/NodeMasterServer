@@ -7,7 +7,9 @@ import java.net.URLEncoder;
 import org.json.JSONException;
 
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
+import ru.babobka.nodemasterserver.exception.TaskNotFoundException;
 import ru.babobka.nodemasterserver.listener.OnJSONExceptionListener;
+import ru.babobka.nodemasterserver.listener.OnTaskNotFoundExceptionListener;
 import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.runnable.HeartBeatingRunnable;
 import ru.babobka.nodemasterserver.service.NodeUsersService;
@@ -67,10 +69,11 @@ public final class MasterServer extends Thread {
 		webServer.addController("users", new NodeUsersCRUDWebController().addWebFilter(authWebFilter));
 		webServer.addController("tasksInfo", new TasksInfoWebController().addWebFilter(authWebFilter));
 		webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
+
 		webServer.addExceptionListener(JSONException.class, new OnJSONExceptionListener());
 		webServer.addExceptionListener(IllegalArgumentException.class, new OnJSONExceptionListener());
 		webServer.addExceptionListener(IllegalStateException.class, new OnJSONExceptionListener());
-
+		webServer.addExceptionListener(TaskNotFoundException.class, new OnTaskNotFoundExceptionListener());
 	}
 
 	public static MasterServer getInstance() throws IOException {

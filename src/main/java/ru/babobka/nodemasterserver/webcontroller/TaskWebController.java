@@ -1,6 +1,7 @@
 package ru.babobka.nodemasterserver.webcontroller;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 
 import ru.babobka.nodemasterserver.service.TaskService;
 import ru.babobka.nodemasterserver.service.TaskServiceImpl;
@@ -19,7 +20,8 @@ public class TaskWebController extends WebController {
 	@Override
 	public HttpResponse onGet(HttpRequest request) throws IOException {
 		String taskName = request.getUri().replaceFirst("/", "");
-		TaskContext taskContext = taskPool.get(taskName);
+		taskName = taskName.substring(taskName.indexOf('/') + 1, taskName.indexOf('?'));
+		TaskContext taskContext = taskPool.get(URLDecoder.decode(taskName, "UTF-8"));
 		return HttpResponse.jsonResponse(taskService.getResult(request, taskContext));
 	}
 

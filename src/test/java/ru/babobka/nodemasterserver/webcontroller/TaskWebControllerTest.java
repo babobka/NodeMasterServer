@@ -7,7 +7,6 @@ import java.net.URLEncoder;
 
 import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -28,9 +27,7 @@ public class TaskWebControllerTest {
 
 	private static SlaveServer[] slaveServers;
 
-	private static final int SLAVES = 5;
-
-	private static final int N = 100;
+	private static final int SLAVES = 3;
 
 	private static MasterServer masterServer;
 
@@ -51,6 +48,8 @@ public class TaskWebControllerTest {
 	private static final int PORT = ServerContext.getInstance().getConfig().getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/task";
+
+	private static final String DUMMY_PRIME_COUNTER_TASK_NAME = "Dummy prime counter";
 
 	@BeforeClass
 	public static void runMasterServer() throws IOException {
@@ -84,29 +83,68 @@ public class TaskWebControllerTest {
 	}
 
 	@Test
-	public void testTenPrimes() throws ClientProtocolException, IOException {
+	public void testTenPrimes() {
 
-		for (int i = 0; i < N; i++) {
-			JSONObject jsonObject = getPrimesInRange(0, 29);
+		for (int i = 0; i < 5000; i++) {
+			JSONObject jsonObject = getPrimesInRangeJson(0, 29);
 			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 10);
 		}
 	}
 
 	@Test
-	public void testThousandPrimes() throws IOException {
+	public void testInvalidTask() {
 
-		for (int i = 0; i < N; i++) {
-			JSONObject jsonObject = getPrimesInRange(0, 7919);
+		assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000).getStatusLine().getStatusCode(), 400);
+
+	}
+
+	@Test
+	public void testMassInvalidTasks() {
+		for (int i = 0; i < 500; i++)
+			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000).getStatusLine().getStatusCode(), 400);
+
+	}
+
+	@Test
+	public void testMassDummyTasks() {
+		for (int i = 0; i < 500; i++)
+			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 1_000_001).getStatusLine().getStatusCode(), 200);
+
+	}
+
+	@Test
+	public void testThousandPrimes() {
+
+		for (int i = 0; i < 500; i++) {
+			JSONObject jsonObject = getPrimesInRangeJson(0, 7919);
 			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 1000);
 		}
 	}
 
 	@Test
-	public void testTenThousandsPrimes() throws IOException {
+	public void testInternalError() {
+		closeSlaves();
+		for (int i = 0; i < 500; i++) {
+			assertEquals(getPrimesInRangeHttpResponse(0, 1_000_000).getStatusLine().getStatusCode(),
+					ru.babobka.vsjws.model.HttpResponse.ResponseCode.INTERNAL_SERVER_ERROR.getCode());
+		}
+	}
 
-		for (int i = 0; i < N; i++) {
-			JSONObject jsonObject = getPrimesInRange(0, 104729);
+	@Test
+	public void testTenThousandsPrimes() {
+
+		for (int i = 0; i < 50; i++) {
+			JSONObject jsonObject = getPrimesInRangeJson(0, 104729);
 			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 10000);
+		}
+	}
+
+	@Test
+	public void testMillionPrimes() throws IOException {
+
+		for (int i = 0; i < 3; i++) {
+			JSONObject jsonObject = getPrimesInRangeJson(0, 15_485_863);
+			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 1_000_000);
 		}
 	}
 
@@ -139,19 +177,42 @@ public class TaskWebControllerTest {
 
 	}
 
-	private JSONObject getPrimesInRange(int begin, int end) throws ClientProtocolException, IOException {
+	private HttpResponse getPrimesInRangeHttpResponse(int begin, int end) {
 		HttpGet get = null;
 		try {
-			String url = URL + "/" + URLEncoder.encode("Dummy prime counter", "UTF-8") + "?begin=" + begin + "&end="
-					+ end + "&noCache=true";
+			String url = URL + "/" + URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8") + "?begin=" + begin
+					+ "&end=" + end + "&noCache=true";
 			get = new HttpGet(url);
 			setCredentialHeaders(get);
-			HttpResponse response = httpClient.execute(get);
-			return new JSONObject(new BasicResponseHandler().handleResponse(response));
+			return httpClient.execute(get);
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+
 		} finally {
 			if (get != null)
 				get.releaseConnection();
 		}
+	}
+
+	private JSONObject getPrimesInRangeJson(int begin, int end) {
+
+		HttpGet get = null;
+		try {
+			String url = URL + "/" + URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8") + "?begin=" + begin
+					+ "&end=" + end + "&noCache=true";
+			get = new HttpGet(url);
+			setCredentialHeaders(get);
+			return new JSONObject(new BasicResponseHandler().handleResponse(httpClient.execute(get)));
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+
+		} finally {
+			if (get != null)
+				get.releaseConnection();
+		}
+
 	}
 
 	private void setCredentialHeaders(HttpMessage httpMessage) {

@@ -18,9 +18,13 @@ public class Slaves {
 	private final AtomicReferenceArray<SlaveThread> threads;
 
 	private final AtomicInteger size = new AtomicInteger(0);
-	
+
 	public Slaves(int maxSize) {
 		this.threads = new AtomicReferenceArray<>(maxSize);
+	}
+
+	public boolean isFittable() {
+		return size.get() <= threads.length();
 	}
 
 	public synchronized List<ClusterUser> getCurrentClusterUserList() {

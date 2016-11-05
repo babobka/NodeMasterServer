@@ -8,6 +8,8 @@ import org.json.JSONException;
 
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.exception.TaskNotFoundException;
+import ru.babobka.nodemasterserver.listener.OnIllegalArgumentExceptionListener;
+import ru.babobka.nodemasterserver.listener.OnIllegalStateExceptionListener;
 import ru.babobka.nodemasterserver.listener.OnJSONExceptionListener;
 import ru.babobka.nodemasterserver.listener.OnTaskNotFoundExceptionListener;
 import ru.babobka.nodemasterserver.model.Slaves;
@@ -71,8 +73,8 @@ public final class MasterServer extends Thread {
 		webServer.addController("availableTasks", new AvailableTasksWebController().addWebFilter(authWebFilter));
 
 		webServer.addExceptionListener(JSONException.class, new OnJSONExceptionListener());
-		webServer.addExceptionListener(IllegalArgumentException.class, new OnJSONExceptionListener());
-		webServer.addExceptionListener(IllegalStateException.class, new OnJSONExceptionListener());
+		webServer.addExceptionListener(IllegalArgumentException.class, new OnIllegalArgumentExceptionListener());
+		webServer.addExceptionListener(IllegalStateException.class, new OnIllegalStateExceptionListener());
 		webServer.addExceptionListener(TaskNotFoundException.class, new OnTaskNotFoundExceptionListener());
 	}
 

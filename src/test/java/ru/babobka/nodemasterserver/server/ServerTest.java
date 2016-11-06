@@ -41,7 +41,7 @@ public class ServerTest {
 	@Test
 	public void logInMass() throws IOException {
 		for (int i = 0; i < TESTS; i++) {
-			createSlaves();
+			createSlaves(SLAVES);
 			startSlaves();
 			assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
 			closeSlaves();
@@ -49,9 +49,19 @@ public class ServerTest {
 	}
 
 	@Test
+	public void logInTooMuch() throws IOException {
+
+		createSlaves(ServerContext.getInstance().getConfig().getMaxClients() + 10);
+		startSlaves();
+		assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
+		closeSlaves();
+
+	}
+
+	@Test
 	public void logOutMass() throws IOException, InterruptedException {
 		for (int i = 0; i < TESTS; i++) {
-			createSlaves();
+			createSlaves(SLAVES);
 			startSlaves();
 			closeSlaves();
 			Thread.sleep(200);
@@ -83,9 +93,9 @@ public class ServerTest {
 		}
 	}
 
-	public static void createSlaves() throws IOException {
-		slaveServers = new SlaveServer[SLAVES];
-		for (int i = 0; i < SLAVES; i++) {
+	public static void createSlaves(int size) throws IOException {
+		slaveServers = new SlaveServer[size];
+		for (int i = 0; i < size; i++) {
 			slaveServers[i] = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(),
 					LOGIN, PASSWORD);
 		}

@@ -23,7 +23,7 @@ import ru.babobka.nodemasterserver.server.MasterServer;
 import ru.babobka.nodemasterserver.server.ServerContext;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
 
-public class TaskWebControllerTest {
+public class PrimeCounterTaskWebControllerTest {
 
 	private static SlaveServer[] slaveServers;
 

@@ -3,6 +3,7 @@ package ru.babobka.nodemasterserver.thread;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.server.ServerContext;
 
@@ -27,6 +28,7 @@ public class InputListenerThread extends Thread {
 					if (ServerContext.getInstance().getSlaves().isFittable()) {
 						new SlaveThread(socket).start();
 					} else {
+						ServerContext.getInstance().getLogger().log(Level.WARNING,"Can not fit new slave");
 						socket.close();
 					}
 				} catch (Exception e) {

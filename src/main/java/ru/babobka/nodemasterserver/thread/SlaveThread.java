@@ -78,7 +78,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		if (!(request.isRaceStyle() && requestMap.containsKey(request.getTaskId()))) {
 			requestMap.put(request.getRequestId(), request);
 			StreamUtil.sendObject(request, socket);
-			ServerContext.getInstance().getLogger().log(request+" was sent");
+			ServerContext.getInstance().getLogger().log(request + " was sent");
 			userService.incrementTaskCount(login);
 		} else {
 			ServerContext.getInstance().getLogger().log("Request  " + request + " was ignored due to race style");
@@ -112,6 +112,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 				request = requestEntry.getValue();
 				ServerContext.getInstance().getResponseStorage().addBadResponse(request.getTaskId());
 			}
+			ServerContext.getInstance().getLogger().log("Responses are clear");
 			requestMap.clear();
 		}
 	}
@@ -147,19 +148,19 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 			socket.setSoTimeout(ServerContext.getInstance().getConfig().getAuthTimeOutMillis());
 			AuthResult authResult = authService.getAuthResult(rsa, socket);
 			if (authResult.isValid()) {
+				this.login = authResult.getLogin();
 				if (!ServerContext.getInstance().getSlaves().add(this)) {
 					throw new IllegalStateException("Cluster is full");
-				}
-				this.login = authResult.getLogin();
+				}	
 				this.taskSet = authResult.getTaskSet();
 				ServerContext.getInstance().getLogger().log(login + " from " + socket + " was logged");
 				while (!Thread.currentThread().isInterrupted()) {
 					socket.setSoTimeout(ServerContext.getInstance().getConfig().getRequestTimeOutMillis());
 					NodeResponse response = (NodeResponse) StreamUtil.receiveObject(socket);
 					if (!response.isHeartBeatingResponse()) {
-						ServerContext.getInstance().getLogger().log("Got response "+response);
+						ServerContext.getInstance().getLogger().log("Got response " + response);
 						requestMap.remove(response.getResponseId());
-						ServerContext.getInstance().getLogger().log("Remove response "+response.getResponseId());
+						ServerContext.getInstance().getLogger().log("Remove response " + response.getResponseId());
 						if (ServerContext.getInstance().getResponseStorage().exists(response.getTaskId())) {
 							ServerContext.getInstance().getResponseStorage().get(response.getTaskId()).add(response);
 						}
@@ -181,6 +182,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 			ServerContext.getInstance().getSlaves().remove(this);
 			synchronized (SlaveThread.class) {
 				if (!requestMap.isEmpty()) {
+					ServerContext.getInstance().getLogger().log("Slave has a requests to redistribute");
 					try {
 						DistributionUtil.redistribute(this);
 					} catch (DistributionException e) {

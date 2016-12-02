@@ -2,7 +2,6 @@ package ru.babobka.nodemasterserver.model;
 
 import java.util.Arrays;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import ru.babobka.nodemasterserver.exception.InvalidUserException;
@@ -11,23 +10,23 @@ import ru.babobka.nodemasterserver.util.MathUtil;
 /**
  * Created by dolgopolov.a on 29.10.15.
  */
-public class User {
+public final class User {
 
 	public static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
 			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
-	private final String name;
+	private String name;
 
-	private final byte[] hashedPassword;
+	private byte[] hashedPassword;
 
-	private final int taskCount;
+	private int taskCount;
 
-	private final String email;
+	private String email;
 
-	private final Integer id;
+	public User() {
+	}
 
-	public User(String name, byte[] hashedPassword, int taskCount, String email) throws InvalidUserException {
-		super();
+	public User(String name, byte[] hashedPassword, int taskCount, String email) {
 		if (name != null) {
 			this.name = name;
 		} else {
@@ -53,37 +52,28 @@ public class User {
 			throw new InvalidUserException("'taskCount' is negative");
 		}
 		this.taskCount = taskCount;
-
-		this.id = hash(this.name);
 	}
 
-	public User(String name, String password, Integer taskCount, String email) throws InvalidUserException {
+	public User(String name, String password, Integer taskCount, String email) {
 		this(name, MathUtil.sha2(password), taskCount, email);
 	}
 
-	public static User fromJson(JSONObject json) throws InvalidUserException {
-		try {
-			String name = null, password = null, email = null;
-			int taskCount =0;
-			if (!json.isNull("name")) {
-				name = json.getString("name");
-			}
+	public User(JSONObject json) {
 
-			if (!json.isNull("password")) {
-				password = json.getString("password");
-			}
-			if (!json.isNull("email")) {
-				email = json.getString("email");
-			}
-			if (!json.isNull("taskCount")) {
-				taskCount = json.getInt("taskCount");
-			} 
-
-			return new User(name, password, taskCount, email);
-
-		} catch (JSONException e) {
-			throw new InvalidUserException("Invalid json structure", e);
+		if (!json.isNull("name")) {
+			name = json.getString("name");
 		}
+
+		if (!json.isNull("password")) {
+			hashedPassword = MathUtil.sha2(json.getString("password"));
+		}
+		if (!json.isNull("email")) {
+			email = json.getString("email");
+		}
+		if (!json.isNull("taskCount")) {
+			taskCount = json.getInt("taskCount");
+		}
+
 	}
 
 	public String getEmail() {
@@ -102,8 +92,39 @@ public class User {
 		return taskCount;
 	}
 
-	public Integer getId() {
-		return id;
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setHashedPassword(byte[] hashedPassword) {
+		this.hashedPassword = hashedPassword;
+	}
+
+	public void setTaskCount(int taskCount) {
+		this.taskCount = taskCount;
+	}
+
+	public void setEmail(String email) {
+		this.email = email;
+	}
+
+	public void validate() {
+		if (name == null) {
+			throw new InvalidUserException("'name' must be set");
+		}
+		if (hashedPassword == null) {
+			throw new InvalidUserException("'password' is null");
+		} else if (hashedPassword.length <= 0) {
+			throw new InvalidUserException("'password' must be set");
+		}
+		if (email == null) {
+			throw new InvalidUserException("empty email");
+		} else if (!email.matches(EMAIL_PATTERN)) {
+			throw new InvalidUserException("invalid email " + email);
+		}
+		if (taskCount < 0) {
+			throw new InvalidUserException("'taskCount' is negative");
+		}
 	}
 
 	@Override
@@ -112,7 +133,6 @@ public class User {
 		int result = 1;
 		result = prime * result + ((email == null) ? 0 : email.hashCode());
 		result = prime * result + Arrays.hashCode(hashedPassword);
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + taskCount;
 		return result;
@@ -134,11 +154,6 @@ public class User {
 			return false;
 		if (!Arrays.equals(hashedPassword, other.hashedPassword))
 			return false;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
 		if (name == null) {
 			if (other.name != null)
 				return false;
@@ -149,14 +164,11 @@ public class User {
 		return true;
 	}
 
-	private static int hash(String s) {
-		char[] chars = s.toCharArray();
-		int hash = 31;
-		for (int i = 0; i < chars.length; i++) {
-			hash *= (int) chars[i];
-		}
-		hash += chars.length;
-		return hash;
+	@Override
+	public String toString() {
+		return "User [name=" + name + ", hashedPassword=" + Arrays.toString(hashedPassword) + ", taskCount=" + taskCount
+				+ ", email=" + email + "]";
 	}
-
+	
+	
 }

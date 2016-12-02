@@ -7,7 +7,7 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import ru.babobka.nodemasterserver.model.AuthResult;
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeserials.NodeResponse;
 import ru.babobka.nodeserials.RSA;
@@ -67,7 +67,7 @@ public class AuthServiceImpl implements AuthService {
 				return new AuthResult(false);
 			}
 		} catch (Exception e) {
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 			return new AuthResult(false);
 		} 
 	}

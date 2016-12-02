@@ -9,10 +9,15 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
+import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
 
 public class ServerTest {
 
+	static {
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+	}
+	
 	private static SlaveServer[] slaveServers;
 
 	private static final int SLAVES = 5;
@@ -24,6 +29,8 @@ public class ServerTest {
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
 	private static final int TESTS = 5;
+
+
 
 	@BeforeClass
 	public static void runMasterServer() throws IOException {
@@ -43,7 +50,7 @@ public class ServerTest {
 		for (int i = 0; i < TESTS; i++) {
 			createSlaves(SLAVES);
 			startSlaves();
-			assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
+			assertEquals(MasterServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
 			closeSlaves();
 		}
 	}
@@ -51,9 +58,9 @@ public class ServerTest {
 	@Test
 	public void logInTooMuch() throws IOException {
 
-		createSlaves(ServerContext.getInstance().getConfig().getMaxClients() + 10);
+		createSlaves(MasterServerContext.getInstance().getConfig().getMaxSlaves() + 1);
 		startSlaves();
-		assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
+		assertEquals(MasterServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
 		closeSlaves();
 
 	}
@@ -65,7 +72,7 @@ public class ServerTest {
 			startSlaves();
 			closeSlaves();
 			Thread.sleep(200);
-			assertEquals(ServerContext.getInstance().getSlaves().getClusterSize(), 0);
+			assertEquals(MasterServerContext.getInstance().getSlaves().getClusterSize(), 0);
 		}
 	}
 
@@ -73,8 +80,8 @@ public class ServerTest {
 	public void logFailBadAddress() {
 
 		try {
-			new SlaveServer("localhost123", ServerContext.getInstance().getConfig().getMainServerPort(), "test_user",
-					"abc");
+			new SlaveServer("localhost123", MasterServerContext.getInstance().getConfig().getMainServerPort(),
+					"test_user", "abc");
 			fail();
 		} catch (IOException e) {
 
@@ -85,8 +92,8 @@ public class ServerTest {
 	@Test
 	public void logFailBadPassword() {
 		try {
-			new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(), LOGIN + "abc",
-					PASSWORD);
+			new SlaveServer("localhost", MasterServerContext.getInstance().getConfig().getMainServerPort(),
+					LOGIN + "abc", PASSWORD);
 			fail();
 		} catch (IOException e) {
 
@@ -95,20 +102,20 @@ public class ServerTest {
 
 	public static void createSlaves(int size) throws IOException {
 		slaveServers = new SlaveServer[size];
-		for (int i = 0; i < size; i++) {
-			slaveServers[i] = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(),
-					LOGIN, PASSWORD);
+		for (int i = 0; i < slaveServers.length; i++) {
+			slaveServers[i] = new SlaveServer("localhost",
+					MasterServerContext.getInstance().getConfig().getMainServerPort(), LOGIN, PASSWORD);
 		}
 	}
 
 	public static void startSlaves() {
-		for (int i = 0; i < SLAVES; i++) {
+		for (int i = 0; i < slaveServers.length; i++) {
 			slaveServers[i].start();
 		}
 	}
 
 	public static void closeSlaves() {
-		for (int i = 0; i < SLAVES; i++) {
+		for (int i = 0; i < slaveServers.length; i++) {
 			slaveServers[i].interrupt();
 		}
 

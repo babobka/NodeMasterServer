@@ -7,14 +7,12 @@ import java.util.List;
 import java.util.Map;
 
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.model.User;
-import ru.babobka.nodemasterserver.server.ServerContext;
-import ru.babobka.nodemasterserver.util.MathUtil;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 
-public class NodeUsersDAOImpl implements NodeUsersDAO {
+class NodeUsersDAOImpl implements NodeUsersDAO {
 
 	private static volatile NodeUsersDAOImpl instance;
 
@@ -110,7 +108,6 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			if (user.getTaskCount() != null) {
 				userMap.put(TASK_COUNT, String.valueOf(user.getTaskCount()).getBytes());
 			}
-
 			Map<String, String> loginIdMap = new HashMap<>();
 			loginIdMap.put(user.getName(), String.valueOf(usersCount));
 			t = jedis.multi();
@@ -119,14 +116,14 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			t.exec();
 			return true;
 		} catch (Exception e) {
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 			return false;
 		} finally {
 			if (t != null) {
 				try {
 					t.close();
 				} catch (IOException e) {
-					ServerContext.getInstance().getLogger().log(e);
+					MasterServerContext.getInstance().getLogger().log(e);
 				}
 			}
 			if (jedis != null) {
@@ -153,14 +150,14 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			}
 			return false;
 		} catch (Exception e) {
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 			return false;
 		} finally {
 			if (t != null) {
 				try {
 					t.close();
 				} catch (IOException e) {
-					ServerContext.getInstance().getLogger().log(e);
+					MasterServerContext.getInstance().getLogger().log(e);
 				}
 			}
 			if (jedis != null) {
@@ -170,7 +167,7 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 	}
 
 	@Override
-	public boolean update(String login, String newLogin, String password, String email, Integer taskCount) {
+	public boolean update(String login, User user) {
 		Jedis jedis = null;
 		Transaction t = null;
 		try {
@@ -178,19 +175,19 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			Integer userId = getUserId(login);
 			t = jedis.multi();
 			if (userId != null) {
-				if (newLogin != null && !newLogin.equals(login)) {
+				if (user.getName() != null && !user.getName().equals(login)) {
 					t.hdel(USERS_KEY, login);
 					t.hset(USERS_KEY, login, String.valueOf(userId));
 				}
 				Map<byte[], byte[]> map = new HashMap<>();
-				if (email != null) {
-					map.put(EMAIL, email.getBytes());
+				if (user.getEmail() != null) {
+					map.put(EMAIL, user.getEmail().getBytes());
 				}
-				if (password != null) {
-					map.put(HASHED_PASSWORD, MathUtil.sha2(password));
+				if (user.getHashedPassword() != null) {
+					map.put(HASHED_PASSWORD, user.getHashedPassword());
 				}
-				if (taskCount != null) {
-					map.put(TASK_COUNT, String.valueOf(taskCount).getBytes());
+				if (user.getTaskCount() != null) {
+					map.put(TASK_COUNT, String.valueOf(user.getTaskCount()).getBytes());
 				}
 				t.hmset((USER_KEY + userId).getBytes(), map);
 				t.exec();
@@ -198,13 +195,13 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 			}
 
 		} catch (Exception e) {
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 		} finally {
 			if (t != null) {
 				try {
 					t.close();
 				} catch (IOException e) {
-					ServerContext.getInstance().getLogger().log(e);
+					MasterServerContext.getInstance().getLogger().log(e);
 				}
 			}
 			if (jedis != null) {
@@ -229,7 +226,8 @@ public class NodeUsersDAOImpl implements NodeUsersDAO {
 
 	@Override
 	public boolean exists(String login) {
-
+		if (login == null)
+			return false;
 		try (Jedis jedis = RedisDatasource.getInstance().getPool().getResource();) {
 			Integer userId = getUserId(login);
 			if (userId != null) {

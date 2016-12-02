@@ -34,6 +34,10 @@ public final class StreamUtil {
 
 	}
 
+	public static String getLocalResourcePath(String resourceName) {
+		return StreamUtil.class.getClassLoader().getResource(resourceName).getPath();
+	}
+
 	public static String readFile(InputStream is) {
 		Scanner scanner = null;
 		try {

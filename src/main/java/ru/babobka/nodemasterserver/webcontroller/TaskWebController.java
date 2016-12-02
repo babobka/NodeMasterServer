@@ -22,7 +22,7 @@ public class TaskWebController extends WebController {
 		String taskName = request.getUri().replaceFirst("/", "");
 		taskName = taskName.substring(taskName.indexOf('/') + 1, taskName.indexOf('?'));
 		TaskContext taskContext = taskPool.get(URLDecoder.decode(taskName, "UTF-8"));
-		return HttpResponse.jsonResponse(taskService.getResult(request, taskContext));
+		return HttpResponse.jsonResponse(taskService.getResult(request.getUrlParams(), taskContext));
 	}
 
 	@Override

@@ -5,7 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
 
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 
 /**
  * Created by dolgopolov.a on 27.07.15.
@@ -21,19 +21,19 @@ public class InputListenerThread extends Thread {
 	@Override
 	public void run() {
 		try {
-			ServerContext.getInstance().getLogger().log("Start InputListenerThread");
+			MasterServerContext.getInstance().getLogger().log("Start InputListenerThread");
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					Socket socket = ss.accept();
-					if (ServerContext.getInstance().getSlaves().isFittable()) {
+					if (MasterServerContext.getInstance().getSlaves().isFittable()) {
 						new SlaveThread(socket).start();
 					} else {
-						ServerContext.getInstance().getLogger().log(Level.WARNING,"Can not fit new slave");
+						MasterServerContext.getInstance().getLogger().log(Level.WARNING,"Can not fit new slave");
 						socket.close();
 					}
 				} catch (Exception e) {
 					if (!ss.isClosed() || !Thread.currentThread().isInterrupted()) {
-						ServerContext.getInstance().getLogger().log(e);
+						MasterServerContext.getInstance().getLogger().log(e);
 					}
 
 				}
@@ -44,11 +44,11 @@ public class InputListenerThread extends Thread {
 				try {
 					ss.close();
 				} catch (IOException e) {
-					ServerContext.getInstance().getLogger().log(e);
+					MasterServerContext.getInstance().getLogger().log(e);
 				}
 			}
 		}
-		ServerContext.getInstance().getLogger().log("InputListenerThread is done");
+		MasterServerContext.getInstance().getLogger().log("InputListenerThread is done");
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class InputListenerThread extends Thread {
 		try {
 			ss.close();
 		} catch (IOException e) {
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 		}
 
 	}

@@ -2,15 +2,17 @@ package ru.babobka.nodemasterserver.service;
 
 
 
+import java.util.Map;
+
 import ru.babobka.nodemasterserver.task.TaskContext;
 import ru.babobka.nodemasterserver.task.TaskResult;
-import ru.babobka.vsjws.model.HttpRequest;
+
 
 public interface TaskService {
 	
-	TaskResult getResult(HttpRequest httpRequest, TaskContext taskContext);
+	TaskResult getResult(Map<String,String> requestArguments, TaskContext taskContext);
 	
-	TaskResult cancelTask(HttpRequest httpRequest);
+	TaskResult cancelTask(long taskId);
 
 	
 }

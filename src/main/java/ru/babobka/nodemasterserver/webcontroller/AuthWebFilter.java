@@ -1,7 +1,7 @@
 package ru.babobka.nodemasterserver.webcontroller;
 
 
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
@@ -18,8 +18,8 @@ public class AuthWebFilter implements WebFilter {
 	public HttpResponse onFilter(HttpRequest request) {
 		String login = request.getHeader("X-Login");
 		String password = request.getHeader("X-Password");
-		if (!login.equals(ServerContext.getInstance().getConfig().getRestServiceLogin())
-				|| !password.equals(ServerContext.getInstance().getConfig().getRestServicePassword())) {
+		if (!login.equals(MasterServerContext.getInstance().getConfig().getRestServiceLogin())
+				|| !password.equals(MasterServerContext.getInstance().getConfig().getRestServicePassword())) {
 			return HttpResponse.textResponse("Bad login/password combination", ResponseCode.UNAUTHORIZED);
 		} else {
 			return null;

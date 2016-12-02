@@ -20,10 +20,15 @@ import org.junit.Test;
 
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
 import ru.babobka.nodemasterserver.server.MasterServer;
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
 
 public class PrimeCounterTaskWebControllerTest {
+
+	static {
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+	}
 
 	private static SlaveServer[] slaveServers;
 
@@ -35,9 +40,9 @@ public class PrimeCounterTaskWebControllerTest {
 
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
-	private static final String REST_LOGIN = ServerContext.getInstance().getConfig().getRestServiceLogin();
+	private static final String REST_LOGIN = MasterServerContext.getInstance().getConfig().getRestServiceLogin();
 
-	private static final String REST_PASSWORD = ServerContext.getInstance().getConfig().getRestServicePassword();
+	private static final String REST_PASSWORD = MasterServerContext.getInstance().getConfig().getRestServicePassword();
 
 	private static final String LOGIN_HEADER = "X-Login";
 
@@ -45,7 +50,7 @@ public class PrimeCounterTaskWebControllerTest {
 
 	private static final HttpClient httpClient = HttpClientBuilder.create().build();
 
-	private static final int PORT = ServerContext.getInstance().getConfig().getWebPort();
+	private static final int PORT = MasterServerContext.getInstance().getConfig().getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/task";
 
@@ -151,8 +156,8 @@ public class PrimeCounterTaskWebControllerTest {
 	public static void createSlaves() throws IOException {
 		slaveServers = new SlaveServer[SLAVES];
 		for (int i = 0; i < SLAVES; i++) {
-			slaveServers[i] = new SlaveServer("localhost", ServerContext.getInstance().getConfig().getMainServerPort(),
-					LOGIN, PASSWORD);
+			slaveServers[i] = new SlaveServer("localhost",
+					MasterServerContext.getInstance().getConfig().getMainServerPort(), LOGIN, PASSWORD);
 		}
 	}
 

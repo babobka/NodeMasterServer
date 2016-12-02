@@ -18,13 +18,13 @@ import ru.babobka.nodemasterserver.service.NodeUsersService;
 import ru.babobka.nodemasterserver.service.NodeUsersServiceImpl;
 import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.nodemasterserver.thread.InputListenerThread;
+import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodemasterserver.webcontroller.AuthWebFilter;
 import ru.babobka.nodemasterserver.webcontroller.AvailableTasksWebController;
 import ru.babobka.nodemasterserver.webcontroller.CacheWebFilter;
 import ru.babobka.nodemasterserver.webcontroller.CancelTaskWebController;
 import ru.babobka.nodemasterserver.webcontroller.ClusterInfoWebController;
 import ru.babobka.nodemasterserver.webcontroller.NodeUsersCRUDWebController;
-import ru.babobka.nodemasterserver.webcontroller.StatisticsWebFilter;
 import ru.babobka.nodemasterserver.webcontroller.TaskWebController;
 import ru.babobka.nodemasterserver.webcontroller.TasksInfoWebController;
 
@@ -40,31 +40,36 @@ public final class MasterServer extends Thread {
 
 	private final TaskPool taskPool = TaskPool.getInstance();
 
-	private volatile Thread heartBeatingThread;
+	private final Thread heartBeatingThread;
 
-	private volatile Thread listenerThread;
+	private final Thread listenerThread;
 
-	private volatile WebServer webServer;
+	private final WebServer webServer;
 
 	private static volatile MasterServer instance;
 
 	private MasterServer() throws IOException {
-		if (!RedisDatasource.getInstance().getPool().getResource().isConnected()) {
+
+		MasterServerContext masterServerContext = MasterServerContext.getInstance();
+		
+		if (!MasterServerContext.getInstance().getConfig().isDebugDataBase()
+				&& !RedisDatasource.getInstance().getPool().getResource().isConnected()) {
 			throw new IOException("Database is not connected");
 		}
-		if (!ServerContext.getInstance().isProduction()) {
+		if (!MasterServerContext.getInstance().getConfig().isProductionDataBase()) {
 			userService.addTestUser();
 		}
-		listenerThread = new InputListenerThread(ServerContext.getInstance().getConfig().getMainServerPort());
+
+		listenerThread = new InputListenerThread(masterServerContext.getConfig().getMainServerPort());
 		heartBeatingThread = new Thread(new HeartBeatingRunnable());
-		webServer = new WebServer("rest server", ServerContext.getInstance().getConfig().getWebPort(),
-				ServerContext.getInstance().getConfig().getLoggerFolder() + File.separator + "rest_log");
+		webServer = new WebServer("rest server", masterServerContext.getConfig().getWebPort(),
+				masterServerContext.getConfig().getLoggerFolder() + File.separator + "rest_log");
+
 		WebFilter authWebFilter = new AuthWebFilter();
 		WebFilter cacheWebFilter = new CacheWebFilter();
-		WebFilter statisticsWebFilter = new StatisticsWebFilter();
 		for (String taskName : taskPool.getTasksMap().keySet()) {
-			webServer.addController("task/" + URLEncoder.encode(taskName, "UTF-8"), new TaskWebController()
-					.addWebFilter(authWebFilter).addWebFilter(cacheWebFilter).addWebFilter(statisticsWebFilter));
+			webServer.addController("task/" + URLEncoder.encode(taskName, "UTF-8"),
+					new TaskWebController().addWebFilter(authWebFilter).addWebFilter(cacheWebFilter));
 		}
 		webServer.addController("cancelTask", new CancelTaskWebController().addWebFilter(authWebFilter));
 		webServer.addController("clusterInfo", new ClusterInfoWebController().addWebFilter(authWebFilter));
@@ -110,43 +115,31 @@ public final class MasterServer extends Thread {
 	}
 
 	private void clear() {
-		WebServer localWebServer = webServer;
-		if (localWebServer != null) {
-			localWebServer.interrupt();
-		}
-
-		Thread localListenerThread = listenerThread;
-		if (localListenerThread != null) {
-			localListenerThread.interrupt();
-			try {
-				localListenerThread.join();
-			} catch (InterruptedException e) {
-				localListenerThread.interrupt();
-				ServerContext.getInstance().getLogger().log(e);
-			}
-		}
-		Thread localHeartBeatingThread = heartBeatingThread;
-		if (localHeartBeatingThread != null) {
-			localHeartBeatingThread.interrupt();
-			try {
-				localHeartBeatingThread.join();
-			} catch (InterruptedException e) {
-				localHeartBeatingThread.interrupt();
-				ServerContext.getInstance().getLogger().log(e);
-
-			}
-		}
-		Slaves slaves = ServerContext.getInstance().getSlaves();
+		interruptAndJoin(webServer);
+		interruptAndJoin(listenerThread);
+		interruptAndJoin(listenerThread);
+		Slaves slaves = MasterServerContext.getInstance().getSlaves();
 		if (slaves != null) {
 			slaves.clear();
 		}
 
 	}
 
+	private static void interruptAndJoin(Thread thread) {
+		thread.interrupt();
+		try {
+			thread.join();
+		} catch (InterruptedException e) {
+			thread.interrupt();
+			MasterServerContext.getInstance().getLogger().log(e);
+		}
+
+	}
+
 	public static void main(String[] args) throws IOException {
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
 		MasterServer server = new MasterServer();
 		server.start();
-
 	}
 
 }

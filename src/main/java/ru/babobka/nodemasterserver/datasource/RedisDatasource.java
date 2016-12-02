@@ -4,7 +4,7 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Protocol;
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 
 public class RedisDatasource {
 
@@ -22,7 +22,7 @@ public class RedisDatasource {
 
 	private RedisDatasource() {
 		pool = new JedisPool(new GenericObjectPoolConfig(), HOST, PORT, Protocol.DEFAULT_TIMEOUT, null,
-				ServerContext.getInstance().getDatabaseNumber(), null);
+				MasterServerContext.getInstance().getDatabaseNumber(), null);
 
 	}
 

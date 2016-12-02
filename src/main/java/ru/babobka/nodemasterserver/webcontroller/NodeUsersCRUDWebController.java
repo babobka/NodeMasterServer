@@ -5,7 +5,6 @@ import org.json.JSONObject;
 
 import ru.babobka.nodemasterserver.exception.InvalidUserException;
 import ru.babobka.nodemasterserver.model.User;
-import ru.babobka.nodemasterserver.model.UserHttpEntity;
 import ru.babobka.nodemasterserver.service.NodeUsersService;
 import ru.babobka.nodemasterserver.service.NodeUsersServiceImpl;
 import ru.babobka.vsjws.model.HttpRequest;
@@ -52,9 +51,9 @@ public class NodeUsersCRUDWebController extends WebController {
 
 	@Override
 	public HttpResponse onPatch(HttpRequest request) {
-
 		try {
-			User user = User.fromJson(new JSONObject(request.getBody()));
+			User user = new User(new JSONObject(request.getBody()));
+			user.validate();
 			if (nodeUsersService.add(user)) {
 				return HttpResponse.ok();
 			} else {
@@ -68,20 +67,18 @@ public class NodeUsersCRUDWebController extends WebController {
 
 	@Override
 	public HttpResponse onPost(HttpRequest request) throws JSONException {
-		String userName = request.getUrlParam("name");
-		UserHttpEntity userHttpEntity = new UserHttpEntity(new JSONObject(request.getBody()));
-
-		if (userHttpEntity.getTaskCount() != null && userHttpEntity.getTaskCount() < 0) {
-			return HttpResponse.textResponse("'taskCount' is negative", ResponseCode.BAD_REQUEST);
-		}
-		if (userHttpEntity.getEmail() != null && !userHttpEntity.getEmail().matches(User.EMAIL_PATTERN)) {
-			return HttpResponse.textResponse("'email' is not valid", ResponseCode.BAD_REQUEST);
-		}
-		if (nodeUsersService.update(userName, userHttpEntity)) {
-			return HttpResponse.ok();
-		} else {
-			return HttpResponse.textResponse(ResponseCode.INTERNAL_SERVER_ERROR.toString(),
-					ResponseCode.INTERNAL_SERVER_ERROR);
+		try {
+			String userName = request.getUrlParam("name");
+			User user = new User(new JSONObject(request.getBody()));
+			user.validate();
+			if (nodeUsersService.update(userName, user)) {
+				return HttpResponse.ok();
+			} else {
+				return HttpResponse.textResponse(ResponseCode.INTERNAL_SERVER_ERROR.toString(),
+						ResponseCode.INTERNAL_SERVER_ERROR);
+			}
+		} catch (InvalidUserException e) {
+			return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
 		}
 	}
 }

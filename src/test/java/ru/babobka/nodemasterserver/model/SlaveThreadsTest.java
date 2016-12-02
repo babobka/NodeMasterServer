@@ -9,16 +9,22 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.thread.SlaveThread;
-
-
+import ru.babobka.nodemasterserver.util.StreamUtil;
 
 public class SlaveThreadsTest {
 
+	static {
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+	}
+	
 	private final int n = 1000;
 	private final int maxThreads = 10;
 	private Slaves slaves;
 	private final SlaveThread slaveThreadMock = new SlaveThread(new Socket());
+
+
 
 	@Before
 	public void setUp() {

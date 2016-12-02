@@ -19,7 +19,7 @@ public interface NodeUsersDAO {
 
 	boolean remove(String login);
 
-	boolean update(String login, String newLogin, String password, String email, Integer taskCount);
+	boolean update(String login, User user);
 
 	boolean incrTaskCount(String login);
 

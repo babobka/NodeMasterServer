@@ -5,10 +5,9 @@ import java.io.File;
 import org.json.JSONObject;
 import ru.babobka.nodemasterserver.exception.ServerConfigurationException;
 
+public class MasterServerConfig {
 
-public class ServerConfig {
-
-	private final int maxClients;
+	private final int maxSlaves;
 
 	private final int authTimeOutMillis;
 
@@ -28,17 +27,21 @@ public class ServerConfig {
 
 	private final String tasksFolder;
 
+	private final boolean debugDataBase;
+
+	private final boolean productionDataBase;
+
 	private static final int PORT_MIN = 1024;
 
 	private static final int PORT_MAX = 65535;
 
-	public ServerConfig(int maxClients, int authTimeOutMillis, int mainServerPort, int requestTimeOutMillis,
+	public MasterServerConfig(int maxSlaves, int authTimeOutMillis, int mainServerPort, int requestTimeOutMillis,
 			int heartBeatTimeOutMillis, int webPort, String restServiceLogin, String restServicePassword,
-			String loggerFolder, String tasksFolder) {
-		if (maxClients <= 0) {
-			throw new ServerConfigurationException("'maxClients' value must be positive");
+			String loggerFolder, String tasksFolder, boolean debugDataBase, boolean productionDataBase) {
+		if (maxSlaves <= 0) {
+			throw new ServerConfigurationException("'maxSlaves' value must be positive");
 		}
-		this.maxClients = maxClients;
+		this.maxSlaves = maxSlaves;
 		if (authTimeOutMillis <= 0) {
 			throw new ServerConfigurationException("'authTimeOutMillis' value must be positive");
 		}
@@ -98,16 +101,19 @@ public class ServerConfig {
 		}
 
 		this.tasksFolder = tasksFolder;
+		this.productionDataBase = productionDataBase;
+		this.debugDataBase = debugDataBase;
 
 	}
 
-	public ServerConfig(JSONObject jsonObject) {
+	public MasterServerConfig(JSONObject jsonObject) {
 
-		this(jsonObject.getInt("maxClients"), jsonObject.getInt("authTimeOutMillis"),
+		this(jsonObject.getInt("maxSlaves"), jsonObject.getInt("authTimeOutMillis"),
 				jsonObject.getInt("mainServerPort"), jsonObject.getInt("requestTimeOutMillis"),
 				jsonObject.getInt("heartBeatTimeOutMillis"), jsonObject.getInt("webPort"),
 				jsonObject.getString("restServiceLogin"), jsonObject.getString("restServicePassword"),
-				jsonObject.getString("loggerFolder"), jsonObject.getString("tasksFolder"));
+				jsonObject.getString("loggerFolder"), jsonObject.getString("tasksFolder"),
+				jsonObject.getBoolean("debugDataBase"), jsonObject.getBoolean("productionDataBase"));
 	}
 
 	public int getAuthTimeOutMillis() {
@@ -130,8 +136,8 @@ public class ServerConfig {
 		return webPort;
 	}
 
-	public int getMaxClients() {
-		return maxClients;
+	public int getMaxSlaves() {
+		return maxSlaves;
 	}
 
 	public String getRestServiceLogin() {
@@ -145,29 +151,27 @@ public class ServerConfig {
 	public String getLoggerFolder() {
 		return loggerFolder;
 	}
-	
 
 	public String getTasksFolder() {
 		return tasksFolder;
 	}
-	
-	
+
+	public boolean isDebugDataBase() {
+		return debugDataBase;
+	}
+
+	public boolean isProductionDataBase() {
+		return productionDataBase;
+	}
 
 	@Override
 	public String toString() {
-		return "ServerConfig [maxClients=" + maxClients + ", authTimeOutMillis=" + authTimeOutMillis
+		return "MasterServerConfig [maxSlaves=" + maxSlaves + ", authTimeOutMillis=" + authTimeOutMillis
 				+ ", mainServerPort=" + mainServerPort + ", requestTimeOutMillis=" + requestTimeOutMillis
 				+ ", heartBeatTimeOutMillis=" + heartBeatTimeOutMillis + ", webPort=" + webPort + ", restServiceLogin="
 				+ restServiceLogin + ", restServicePassword=" + restServicePassword + ", loggerFolder=" + loggerFolder
-				+ ", tasksFolder=" + tasksFolder + "]";
-	}
-	
-	public static void main(String[] args)
-	{
-		//int maxClients, int authTimeOutMillis, int mainServerPort, int requestTimeOutMillis,
-		//int heartBeatTimeOutMillis, int webPort, String restServiceLogin, String restServicePassword,
-		//String loggerFolder, String tasksFolder
-		System.out.println(new JSONObject(new ServerConfig(50, 2000, 1918, 45000, 30000, 2512, "login", "restServicePassword", "/Users/bbk/Documents/nodes/log", "/Users/bbk/Documents/nodes/tasks/")));
+				+ ", tasksFolder=" + tasksFolder + ", debugDataBase=" + debugDataBase + ", productionDataBase="
+				+ productionDataBase + "]";
 	}
 
 }

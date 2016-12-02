@@ -41,35 +41,31 @@ public class Slaves {
 		return clusterUserList;
 	}
 
-	public boolean remove(SlaveThread slave) {
+	public synchronized boolean remove(SlaveThread slave) {
 		if (slave != null) {
 			for (int i = 0; i < threads.length(); i++) {
 				if (threads.get(i) == slave) {
-					synchronized (this) {
-						if (threads.get(i) == slave) {
-							threads.set(i, null);
-							size.decrementAndGet();
-							return true;
-						}
-					}
+					threads.set(i, null);
+					size.decrementAndGet();
+					return true;
+
 				}
+
 			}
 		}
 		return false;
 	}
 
-	public boolean add(SlaveThread slave) {
+	public synchronized boolean add(SlaveThread slave) {
 		if (slave != null && size.intValue() != threads.length()) {
 			for (int i = 0; i < threads.length(); i++) {
 				if (threads.get(i) == null) {
-					synchronized (this) {
-						if (threads.get(i) == null) {
-							threads.set(i, slave);
-							size.incrementAndGet();
-							return true;
-						}
-					}
+					threads.set(i, slave);
+					size.incrementAndGet();
+					return true;
+
 				}
+
 			}
 		}
 		return false;
@@ -140,27 +136,17 @@ public class Slaves {
 		List<SlaveThread> clientThreadsList = getFullList();
 		for (SlaveThread ct : clientThreadsList) {
 			ct.interrupt();
-			try {
-				ct.join();
-			} catch (InterruptedException e) {
-				ct.interrupt();
-				e.printStackTrace();
-			}
 		}
 	}
 
 	public synchronized void clear() {
-		if (!isEmpty()) {
-			synchronized (this) {
-				if (!isEmpty()) {
-					interruptAll();
-					for (int i = 0; i < threads.length(); i++) {
-						threads.set(i, null);
-					}
-					size.set(0);
 
-				}
+		if (!isEmpty()) {
+			interruptAll();
+			for (int i = 0; i < threads.length(); i++) {
+				threads.set(i, null);
 			}
+			size.set(0);
 		}
 
 	}

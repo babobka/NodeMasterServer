@@ -10,10 +10,15 @@ import org.junit.After;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.model.User;
-import ru.babobka.nodemasterserver.model.UserHttpEntity;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeserials.RSA;
 
 public class NodeUserServiceTest {
+
+	static {
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+	}
 
 	private NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
@@ -50,9 +55,10 @@ public class NodeUserServiceTest {
 	@Test
 	public void testList() {
 		List<User> users = userService.getList();
+		int oldSize = users.size();
 		userService.add(testUser);
 		users = userService.getList();
-		assertTrue(users.size() > 1);
+		assertEquals(oldSize + 1, users.size());
 	}
 
 	@Test
@@ -68,7 +74,7 @@ public class NodeUserServiceTest {
 		userService.add(testUser);
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put("taskCount", testUser.getTaskCount() + 1);
-		assertTrue(userService.update(testUser.getName(), new UserHttpEntity(jsonObject)));
+		assertTrue(userService.update(testUser.getName(), new User(jsonObject)));
 		User user = userService.get(testUser.getName());
 		assertEquals(oldTaskCount + 1, user.getTaskCount().intValue());
 	}
@@ -76,7 +82,7 @@ public class NodeUserServiceTest {
 	@Test
 	public void testInvalidUpdate() {
 		userService.add(testUser);
-		assertFalse(userService.update(null, new UserHttpEntity(new JSONObject())));
+		assertFalse(userService.update(null, new User(new JSONObject())));
 	}
 
 	@Test

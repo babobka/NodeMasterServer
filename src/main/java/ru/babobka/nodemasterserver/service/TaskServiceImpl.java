@@ -10,7 +10,7 @@ import ru.babobka.nodemasterserver.exception.EmptyClusterException;
 import ru.babobka.nodemasterserver.model.ResponseStorage;
 import ru.babobka.nodemasterserver.model.ResponsesArray;
 import ru.babobka.nodemasterserver.model.Timer;
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.task.TaskContext;
 import ru.babobka.nodemasterserver.task.TaskPool;
 import ru.babobka.nodemasterserver.task.TaskResult;
@@ -20,8 +20,6 @@ import ru.babobka.nodemasterserver.util.DistributionUtil;
 import ru.babobka.nodeserials.NodeRequest;
 import ru.babobka.subtask.model.RequestDistributor;
 import ru.babobka.subtask.model.SubTask;
-import ru.babobka.vsjws.model.HttpRequest;
-
 
 public class TaskServiceImpl implements TaskService {
 
@@ -48,12 +46,6 @@ public class TaskServiceImpl implements TaskService {
 		return localInstance;
 	}
 
-	private String getTaskName(HttpRequest request) {
-
-		return request.getUri().replaceFirst("/", "");
-
-	}
-
 	private void startTask(TaskContext taskContext, long taskId, Map<String, String> arguments)
 			throws EmptyClusterException, DistributionException {
 		int currentClusterSize;
@@ -61,17 +53,13 @@ public class TaskServiceImpl implements TaskService {
 		if (isRequestDataIsTooSmall(taskContext.getTask(), arguments)) {
 			currentClusterSize = 1;
 		} else {
-			currentClusterSize = ServerContext.getInstance().getSlaves().getClusterSize(taskName);
+			currentClusterSize = MasterServerContext.getInstance().getSlaves().getClusterSize(taskName);
 		}
-		if (currentClusterSize < 1) {
-			throw new EmptyClusterException();
-		} else {
-			ServerContext.getInstance().getResponseStorage().put(taskId,
-					new ResponsesArray(currentClusterSize, taskContext, arguments));
-			NodeRequest[] requests = taskContext.getTask().getDistributor().distribute(arguments, currentClusterSize,
-					taskId);
-			DistributionUtil.broadcastRequests(taskName, requests);
-		}
+		MasterServerContext.getInstance().getResponseStorage().put(taskId,
+				new ResponsesArray(currentClusterSize, taskContext, arguments));
+		NodeRequest[] requests = taskContext.getTask().getDistributor().distribute(arguments, currentClusterSize,
+				taskId);
+		DistributionUtil.broadcastRequests(taskName, requests);
 
 	}
 
@@ -84,31 +72,31 @@ public class TaskServiceImpl implements TaskService {
 
 	}
 
-	private TaskStartResult startTask(HttpRequest request, TaskContext taskContext, long taskId) {
+	private TaskStartResult startTask(Map<String,String> requestArguments, TaskContext taskContext, long taskId) {
 
 		RequestDistributor requestDistributor = taskContext.getTask().getDistributor();
-		if (requestDistributor.isValidArguments(request.getUrlParams())) {
-			ServerContext.getInstance().getLogger().log("Task id is " + taskId);
+		if (requestDistributor.isValidArguments(requestArguments)) {
+			MasterServerContext.getInstance().getLogger().log("Task id is " + taskId);
 			try {
-				startTask(taskContext, taskId, request.getUrlParams());
+				startTask(taskContext, taskId, requestArguments);
 				return new TaskStartResult(taskId);
 			} catch (DistributionException e) {
-				ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
+				MasterServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 				try {
 					DistributionUtil.broadcastStopRequests(
-							ServerContext.getInstance().getSlaves().getListByTaskId(taskId),
-							new NodeRequest(taskId, true, getTaskName(request)));
+							MasterServerContext.getInstance().getSlaves().getListByTaskId(taskId),
+							new NodeRequest(taskId, true, taskContext.getConfig().getName()));
 				} catch (EmptyClusterException e1) {
-					ServerContext.getInstance().getLogger().log(e1);
+					MasterServerContext.getInstance().getLogger().log(e1);
 				}
 				return new TaskStartResult(taskId, true, true, "Can not distribute your request");
 			} catch (EmptyClusterException e) {
-				ServerContext.getInstance().getLogger().log(e);
+				MasterServerContext.getInstance().getLogger().log(e);
 				return new TaskStartResult(taskId, true, true, "Can not distribute due to empty cluster");
 			}
 
 		} else {
-			ServerContext.getInstance().getLogger().log(Level.SEVERE, WRONG_ARGUMENTS);
+			MasterServerContext.getInstance().getLogger().log(Level.SEVERE, WRONG_ARGUMENTS);
 			return new TaskStartResult(taskId, true, false, WRONG_ARGUMENTS);
 		}
 
@@ -116,29 +104,29 @@ public class TaskServiceImpl implements TaskService {
 
 	private Map<String, Serializable> getTaskResult(long taskId) {
 		try {
-			ResponseStorage responseStorage = ServerContext.getInstance().getResponseStorage();
+			ResponseStorage responseStorage = MasterServerContext.getInstance().getResponseStorage();
 			ResponsesArray responsesArray = responseStorage.get(taskId);
 			if (responsesArray != null) {
 				return taskPool.get(responsesArray.getMeta().getTaskName()).getTask().getReducer()
 						.reduce(responsesArray.getResponseList());
 
 			} else {
-				ServerContext.getInstance().getLogger().log(Level.SEVERE, "No such task");
+				MasterServerContext.getInstance().getLogger().log(Level.SEVERE, "No such task");
 			}
 		} catch (Exception e) {
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 		}
 		return null;
 	}
 
 	@Override
-	public TaskResult getResult(HttpRequest request, TaskContext taskContext) {
+	public TaskResult getResult(Map<String,String> requestArguments, TaskContext taskContext) {
 
 		Map<String, Serializable> resultMap;
 
 		Long taskId = (long) (Math.random() * Integer.MAX_VALUE);
 		try {
-			TaskStartResult startResult = startTask(request, taskContext, taskId);
+			TaskStartResult startResult = startTask(requestArguments, taskContext, taskId);
 			if (!startResult.isFailed()) {
 				Timer timer = new Timer();
 				resultMap = getTaskResult(startResult.getTaskId());
@@ -153,31 +141,30 @@ public class TaskServiceImpl implements TaskService {
 				throw new IllegalArgumentException(startResult.getMessage());
 			}
 		} finally {
-			ServerContext.getInstance().getResponseStorage().clear(taskId);
+			MasterServerContext.getInstance().getResponseStorage().clear(taskId);
 		}
 
 	}
 
 	@Override
-	public TaskResult cancelTask(HttpRequest httpRequest) {
+	public TaskResult cancelTask(long taskId) {
 		try {
-			long taskId = Long.parseLong(httpRequest.getParam("taskId"));
-			List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves().getListByTaskId(taskId);
-			ServerContext.getInstance().getLogger().log("Trying to cancel task " + taskId);
-			ResponsesArray responsesArray = ServerContext.getInstance().getResponseStorage().get(taskId);
+			List<SlaveThread> clientThreads = MasterServerContext.getInstance().getSlaves().getListByTaskId(taskId);
+			MasterServerContext.getInstance().getLogger().log("Trying to cancel task " + taskId);
+			ResponsesArray responsesArray = MasterServerContext.getInstance().getResponseStorage().get(taskId);
 			if (responsesArray != null) {
 				DistributionUtil.broadcastStopRequests(clientThreads,
 						new NodeRequest(taskId, true, responsesArray.getMeta().getTaskName()));
-				ServerContext.getInstance().getResponseStorage().setStopAllResponses(taskId);
+				MasterServerContext.getInstance().getResponseStorage().setStopAllResponses(taskId);
 				return new TaskResult("Task " + taskId + " was canceled");
 			} else {
-				ServerContext.getInstance().getLogger().log(Level.SEVERE, "No task was found for given task id");
+				MasterServerContext.getInstance().getLogger().log(Level.SEVERE, "No task was found for given task id");
 				throw new IllegalArgumentException("No task was found for given task id");
 			}
 		} catch (NumberFormatException e) {
 			throw new IllegalArgumentException(WRONG_ARGUMENTS, e);
 		} catch (EmptyClusterException e) {
-			ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
+			MasterServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 			throw new IllegalStateException("Can not cancel task due to empty cluster", e);
 		}
 	}

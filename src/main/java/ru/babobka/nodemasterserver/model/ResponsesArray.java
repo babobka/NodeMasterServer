@@ -1,7 +1,7 @@
 package ru.babobka.nodemasterserver.model;
 
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.task.TaskContext;
 import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodemasterserver.util.DistributionUtil;
@@ -68,23 +68,25 @@ public final class ResponsesArray {
 					if (size.intValue() == responseArray.length()) {
 						this.notifyAll();
 						if (corruptedResponseCount == size.intValue()) {
-							ServerContext.getInstance().getLogger()
+							MasterServerContext.getInstance().getLogger()
 									.log(TASK + " " + response.getTaskId() + " was canceled");
 						} else {
-							ServerContext.getInstance().getLogger()
+							MasterServerContext.getInstance().getLogger()
 									.log(TASK + " " + response.getTaskId() + " is ready ");
 						}
 					} else if (taskContext.getConfig().isRaceStyle()
 							&& taskContext.getTask().getReducer().isValidResponse(response)) {
-						List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves()
+						List<SlaveThread> clientThreads = MasterServerContext.getInstance().getSlaves()
 								.getListByTaskId(response.getTaskId());
 						try {
-							if (clientThreads.size() > 1) {
+							if (!clientThreads.isEmpty()) {
+								MasterServerContext.getInstance().getLogger()
+										.log("Cancel all requests for task id " + response.getTaskId());
 								DistributionUtil.broadcastStopRequests(clientThreads,
 										new NodeRequest(response.getTaskId(), true, response.getTaskName()));
 							}
 						} catch (EmptyClusterException e) {
-							ServerContext.getInstance().getLogger().log(e);
+							MasterServerContext.getInstance().getLogger().log(e);
 						}
 
 					}
@@ -107,7 +109,7 @@ public final class ResponsesArray {
 					size.incrementAndGet();
 					if (size.intValue() == responseArray.length()) {
 						this.notifyAll();
-						ServerContext.getInstance().getLogger()
+						MasterServerContext.getInstance().getLogger()
 								.log(TASK + " " + response.getTaskId() + " is ready due to filling");
 						break;
 					}
@@ -129,7 +131,7 @@ public final class ResponsesArray {
 			return responses;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			ServerContext.getInstance().getLogger().log(e);
+			MasterServerContext.getInstance().getLogger().log(e);
 		}
 		return responses;
 

@@ -9,7 +9,7 @@ import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.exception.DistributionException;
 import ru.babobka.nodemasterserver.exception.EmptyClusterException;
-import ru.babobka.nodemasterserver.server.ServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodeserials.NodeRequest;
 
@@ -24,19 +24,19 @@ public final class DistributionUtil {
 	public static void redistribute(SlaveThread clientThread) throws DistributionException, EmptyClusterException {
 
 		if (clientThread.getRequestMap().size() > 0) {
-			if (!ServerContext.getInstance().getSlaves().isEmpty()) {
-				ServerContext.getInstance().getLogger().log(Level.INFO, "Redistribution");
+			if (!MasterServerContext.getInstance().getSlaves().isEmpty()) {
+				MasterServerContext.getInstance().getLogger().log(Level.INFO, "Redistribution");
 				Map<String, LinkedList<NodeRequest>> requestsByUri = clientThread.getRequestsGroupedByTask();
 				for (Map.Entry<String, LinkedList<NodeRequest>> requestByUriEntry : requestsByUri.entrySet()) {
 					try {
 						broadcastRequests(requestByUriEntry.getKey(), requestByUriEntry.getValue(), MAX_RETRY);
 					} catch (Exception e) {
-						ServerContext.getInstance().getLogger().log(Level.SEVERE, "Redistribution failed");
+						MasterServerContext.getInstance().getLogger().log(Level.SEVERE, "Redistribution failed");
 						throw new DistributionException(e);
 					}
 				}
 			} else {
-				ServerContext.getInstance().getLogger().log(Level.SEVERE, "Redistribution failed due to empty cluster");
+				MasterServerContext.getInstance().getLogger().log(Level.SEVERE, "Redistribution failed due to empty cluster");
 				throw new EmptyClusterException();
 			}
 		}
@@ -61,7 +61,7 @@ public final class DistributionUtil {
 
 	private static void broadcastRequests(String taskName, NodeRequest[] requests, int retry, int maxRetry)
 			throws EmptyClusterException, DistributionException {
-		List<SlaveThread> clientThreads = ServerContext.getInstance().getSlaves().getList(taskName);
+		List<SlaveThread> clientThreads = MasterServerContext.getInstance().getSlaves().getList(taskName);
 		if (clientThreads.isEmpty()) {
 			throw new EmptyClusterException();
 		} else {
@@ -78,7 +78,7 @@ public final class DistributionUtil {
 				}
 			} catch (IOException e) {
 				if (retry < maxRetry) {
-					ServerContext.getInstance().getLogger().log(Level.INFO, "Broadcast retry " + retry);
+					MasterServerContext.getInstance().getLogger().log(Level.INFO, "Broadcast retry " + retry);
 					broadcastRequests(taskName, MathUtil.subArray(requests, i), retry + 1, maxRetry);
 				} else {
 					throw new DistributionException(e);
@@ -101,7 +101,7 @@ public final class DistributionUtil {
 				try {
 					iterator.next().sendStopRequest(stopRequest);
 				} catch (Exception e) {
-					ServerContext.getInstance().getLogger().log(Level.SEVERE, e);
+					MasterServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 				}
 			}
 		}

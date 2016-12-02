@@ -1,15 +1,19 @@
 package ru.babobka.nodemasterserver.server;
 
+import java.io.File;
+import java.util.logging.Level;
+
 import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
 import ru.babobka.nodemasterserver.datasource.RedisDatasource;
 import ru.babobka.nodemasterserver.logger.SimpleLogger;
 import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.model.ResponseStorage;
 
+public class MasterServerContext {
 
-public class ServerContext {
+	private static String configPath;
 
-	private final ServerConfig config;
+	private final MasterServerConfig config;
 
 	private final SimpleLogger logger;
 
@@ -19,21 +23,22 @@ public class ServerContext {
 
 	private final int databaseNumber;
 
-	private static volatile ServerContext instance;
+	private static volatile MasterServerContext instance;
 
-	private static volatile boolean production;
-
-	private ServerContext() {
+	private MasterServerContext() {
 		try {
-			config = JSONFileServerConfigBuilder.build(production);
-			if (production) {
+			if (configPath == null) {
+				throw new IllegalStateException("'configPath' was not specified.");
+			}
+			config = JSONFileServerConfigBuilder.build(configPath);
+			if (config.isProductionDataBase()) {
 				databaseNumber = RedisDatasource.PRODUCTION_DATABASE_NUMBER;
 			} else {
 				databaseNumber = RedisDatasource.TEST_DATABASE_NUMBER;
 			}
 			logger = new SimpleLogger("NodeServer", config.getLoggerFolder(), "server");
 			responseStorage = new ResponseStorage();
-			slaves = new Slaves(config.getMaxClients());
+			slaves = new Slaves(config.getMaxSlaves());
 			logger.log("ServerContext was successfuly created");
 			logger.log(config.toString());
 		} catch (Exception e) {
@@ -41,13 +46,13 @@ public class ServerContext {
 		}
 	}
 
-	public static ServerContext getInstance() {
-		ServerContext localInstance = instance;
+	public static MasterServerContext getInstance() {
+		MasterServerContext localInstance = instance;
 		if (localInstance == null) {
-			synchronized (ServerContext.class) {
+			synchronized (MasterServerContext.class) {
 				localInstance = instance;
 				if (localInstance == null) {
-					instance = localInstance = new ServerContext();
+					instance = localInstance = new MasterServerContext();
 
 				}
 			}
@@ -55,7 +60,7 @@ public class ServerContext {
 		return localInstance;
 	}
 
-	public ServerConfig getConfig() {
+	public MasterServerConfig getConfig() {
 		return config;
 
 	}
@@ -72,22 +77,26 @@ public class ServerContext {
 		return responseStorage;
 	}
 
-	static void setProduction(boolean production) {
-		if (instance == null) {
-			synchronized (ServerContext.class) {
-				if (instance == null) {
-					ServerContext.production = production;
-				}
-			}
-		}
-	}
-
 	public int getDatabaseNumber() {
 		return databaseNumber;
 	}
 
-	public boolean isProduction() {
-		return production;
+	public static synchronized String getConfigPath() {
+		return configPath;
+	}
+
+	public static synchronized void setConfigPath(String configPath) {
+		if (instance == null) {
+			File f = new File(configPath);
+			if (f.exists() && !f.isDirectory()) {
+				MasterServerContext.configPath = configPath;
+			} else {
+				throw new RuntimeException("'configPath' " + configPath + " doesn't exists");
+			}
+
+		} else {
+			instance.logger.log(Level.WARNING, "Can not define 'configFolder' value. Context is already created.");
+		}
 	}
 
 }

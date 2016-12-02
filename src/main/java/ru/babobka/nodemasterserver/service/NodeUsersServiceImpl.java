@@ -5,15 +5,16 @@ import java.util.List;
 
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
 import ru.babobka.nodemasterserver.dao.NodeUsersDAO;
-import ru.babobka.nodemasterserver.dao.NodeUsersDAOImpl;
+import ru.babobka.nodemasterserver.dao.UsersDAOFactory;
 import ru.babobka.nodemasterserver.model.User;
-import ru.babobka.nodemasterserver.model.UserHttpEntity;
+import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.util.MathUtil;
 import ru.babobka.nodeserials.RSA;
 
 public class NodeUsersServiceImpl implements NodeUsersService {
 
-	private final NodeUsersDAO userDAO = NodeUsersDAOImpl.getInstance();
+	private final NodeUsersDAO userDAO = UsersDAOFactory
+			.get(MasterServerContext.getInstance().getConfig().isDebugDataBase());
 
 	private static volatile NodeUsersServiceImpl instance;
 
@@ -51,13 +52,10 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	}
 
 	@Override
-	public boolean add(User user) {
+	public synchronized boolean add(User user) {
 		if (!userDAO.exists(user.getName())) {
-			synchronized (this) {
-				if (!userDAO.exists(user.getName())) {
-					return userDAO.add(user);
-				}
-			}
+			return userDAO.add(user);
+
 		}
 		return false;
 
@@ -69,11 +67,12 @@ public class NodeUsersServiceImpl implements NodeUsersService {
 	}
 
 	@Override
-	public boolean update(String userLoginToUpdate, UserHttpEntity userHttpEntity) {
-		if (userLoginToUpdate != null) {
-			return userDAO.update(userLoginToUpdate, userHttpEntity.getEmail(), userHttpEntity.getPassword(),
-					userHttpEntity.getEmail(), userHttpEntity.getTaskCount());
+	public synchronized boolean update(String userLoginToUpdate, User user) {
+
+		if (userLoginToUpdate != null && !userDAO.exists(user.getName())) {
+			return userDAO.update(userLoginToUpdate, user);
 		}
+
 		return false;
 
 	}

@@ -4,7 +4,7 @@ public interface CacheDAO {
 
 	String get(String key);
 
-	boolean put(String key, byte[] value);
+	boolean put(String key, String value);
 	
 
 }

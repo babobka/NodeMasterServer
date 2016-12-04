@@ -22,6 +22,8 @@ import java.util.Scanner;
 import org.json.JSONObject;
 
 import ru.babobka.nodemasterserver.classloader.JarClassLoader;
+
+
 import ru.babobka.subtask.model.SubTask;
 
 /**
@@ -34,47 +36,26 @@ public final class StreamUtil {
 
 	}
 
-	public static String getLocalResourcePath(String resourceName) {
-		return StreamUtil.class.getClassLoader().getResource(resourceName).getPath();
+	public static String getLocalResourcePath(Class<?> clazz, String resourceName) {
+		return clazz.getClassLoader().getResource(resourceName).getPath();
 	}
 
 	public static String readFile(InputStream is) {
-		Scanner scanner = null;
-		try {
-			scanner = new Scanner(is).useDelimiter("\\A");
-			return scanner.hasNext() ? scanner.next() : "";
 
-		} finally {
-			if (scanner != null) {
-				scanner.close();
-			}
-			try {
-				is.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		try (Scanner scanner = new Scanner(is); Scanner delimitedScanner = scanner.useDelimiter("\\A");) {
+			return scanner.hasNext() ? scanner.next() : "";
 		}
 	}
 
 	public static String readFile(File file) {
 		String content = null;
-		FileReader reader = null;
-		try {
-			reader = new FileReader(file);
+		try (FileReader reader = new FileReader(file);) {
 			char[] chars = new char[(int) file.length()];
 			reader.read(chars);
 			content = new String(chars);
 			reader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		} finally {
-			if (reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 		return content;
 	}
@@ -136,61 +117,32 @@ public final class StreamUtil {
 	}
 
 	public static Object receiveObject(Socket socket) throws IOException {
+
 		DataInputStream dIn = new DataInputStream(socket.getInputStream());
 		int length = dIn.readInt();
 		if (length > 0) {
 			byte[] message = new byte[length];
 			dIn.readFully(message, 0, message.length);
 			return byteArrayToObject(message);
-
 		}
 		return null;
+
 	}
 
 	private static Object byteArrayToObject(byte[] byteArray) throws IOException {
-		ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
-		ObjectInput in = null;
-		try {
-			in = new ObjectInputStream(bis);
+		try (ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
+				ObjectInput in = new ObjectInputStream(bis);) {
 			return in.readObject();
 		} catch (ClassNotFoundException e) {
 			throw new IOException(e);
-		} finally {
-			try {
-				bis.close();
-			} catch (IOException ex) {
-				// ignore close exception
-			}
-			try {
-				if (in != null) {
-					in.close();
-				}
-			} catch (IOException ex) {
-				// ignore close exception
-			}
 		}
 	}
 
 	private static byte[] objectToByteArray(Object object) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutput out = null;
-		try {
-			out = new ObjectOutputStream(bos);
+
+		try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos);) {
 			out.writeObject(object);
 			return bos.toByteArray();
-		} finally {
-			try {
-				if (out != null) {
-					out.close();
-				}
-			} catch (IOException ex) {
-				// ignore close exception
-			}
-			try {
-				bos.close();
-			} catch (IOException ex) {
-				// ignore close exception
-			}
 		}
 	}
 

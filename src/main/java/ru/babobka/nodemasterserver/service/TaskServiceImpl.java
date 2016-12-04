@@ -57,9 +57,14 @@ public class TaskServiceImpl implements TaskService {
 		}
 		MasterServerContext.getInstance().getResponseStorage().put(taskId,
 				new ResponsesArray(currentClusterSize, taskContext, arguments));
-		NodeRequest[] requests = taskContext.getTask().getDistributor().distribute(arguments, currentClusterSize,
-				taskId);
-		DistributionUtil.broadcastRequests(taskName, requests);
+		if (currentClusterSize > 0) {
+
+			NodeRequest[] requests = taskContext.getTask().getDistributor().distribute(arguments, currentClusterSize,
+					taskId);
+			DistributionUtil.broadcastRequests(taskName, requests);
+		} else {
+			throw new EmptyClusterException();
+		}
 
 	}
 
@@ -72,7 +77,7 @@ public class TaskServiceImpl implements TaskService {
 
 	}
 
-	private TaskStartResult startTask(Map<String,String> requestArguments, TaskContext taskContext, long taskId) {
+	private TaskStartResult startTask(Map<String, String> requestArguments, TaskContext taskContext, long taskId) {
 
 		RequestDistributor requestDistributor = taskContext.getTask().getDistributor();
 		if (requestDistributor.isValidArguments(requestArguments)) {
@@ -120,7 +125,7 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	@Override
-	public TaskResult getResult(Map<String,String> requestArguments, TaskContext taskContext) {
+	public TaskResult getResult(Map<String, String> requestArguments, TaskContext taskContext) {
 
 		Map<String, Serializable> resultMap;
 

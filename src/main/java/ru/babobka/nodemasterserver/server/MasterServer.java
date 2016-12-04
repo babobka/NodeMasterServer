@@ -51,7 +51,7 @@ public final class MasterServer extends Thread {
 	private MasterServer() throws IOException {
 
 		MasterServerContext masterServerContext = MasterServerContext.getInstance();
-		
+
 		if (!MasterServerContext.getInstance().getConfig().isDebugDataBase()
 				&& !RedisDatasource.getInstance().getPool().getResource().isConnected()) {
 			throw new IOException("Database is not connected");
@@ -114,7 +114,7 @@ public final class MasterServer extends Thread {
 		clear();
 	}
 
-	private void clear() {
+	private synchronized void clear() {
 		interruptAndJoin(webServer);
 		interruptAndJoin(listenerThread);
 		interruptAndJoin(listenerThread);
@@ -137,7 +137,7 @@ public final class MasterServer extends Thread {
 	}
 
 	public static void main(String[] args) throws IOException {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
 		MasterServer server = new MasterServer();
 		server.start();
 	}

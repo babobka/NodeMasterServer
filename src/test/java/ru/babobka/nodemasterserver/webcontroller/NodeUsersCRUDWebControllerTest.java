@@ -22,6 +22,8 @@ import org.junit.Test;
 import ru.babobka.nodemasterserver.server.MasterServer;
 import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
+import ru.babobka.nodeslaveserver.server.SlaveServer;
+import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 import ru.babobka.vsjws.model.HttpResponse;
 
 public class NodeUsersCRUDWebControllerTest {
@@ -29,7 +31,8 @@ public class NodeUsersCRUDWebControllerTest {
 	// TODO 'java.net.SocketException: Broken pipe' was found. Fix it.
 	
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
+		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
 	}
 
 	private static MasterServer masterServer;

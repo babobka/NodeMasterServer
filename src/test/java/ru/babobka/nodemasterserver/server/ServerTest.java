@@ -11,11 +11,13 @@ import org.junit.Test;
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
+import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 
 public class ServerTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
+		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
 	}
 	
 	private static SlaveServer[] slaveServers;

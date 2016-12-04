@@ -24,10 +24,12 @@ import ru.babobka.nodemasterserver.server.MasterServer;
 import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
+import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 
 public class FactorTaskWebControllerTest {
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
+		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
 	}
 
 	private static SlaveServer[] slaveServers;
@@ -56,8 +58,6 @@ public class FactorTaskWebControllerTest {
 
 	private static final String FACTOR_TASK_NAME = "Elliptic curve factor";
 
-	
-	
 	@BeforeClass
 	public static void runServers() throws IOException {
 		masterServer = MasterServer.getInstance();
@@ -80,7 +80,6 @@ public class FactorTaskWebControllerTest {
 		closeSlaves();
 
 	}
-
 
 	@Test
 	public void testLittleNumberFactor() {
@@ -173,14 +172,13 @@ public class FactorTaskWebControllerTest {
 		for (Thread thread : threads) {
 			thread.join();
 		}
-		if(failedTests.get()>0)
-		{
+		if (failedTests.get() > 0) {
 			fail();
 		}
 
 	}
 
-	//@Test
+	// @Test
 	public void testVeryBigNumberFactor() {
 		for (int i = 0; i < 15; i++) {
 			BigInteger number = BigInteger.probablePrime(40, new Random())
@@ -191,8 +189,7 @@ public class FactorTaskWebControllerTest {
 		}
 	}
 
-
-	//@Test
+	// @Test
 	public void testExtraBigNumberFactor() {
 		for (int i = 0; i < 5; i++) {
 			BigInteger number = BigInteger.probablePrime(48, new Random())
@@ -206,8 +203,8 @@ public class FactorTaskWebControllerTest {
 	public static void createSlaves() throws IOException {
 		slaveServers = new SlaveServer[SLAVES];
 		for (int i = 0; i < SLAVES; i++) {
-			slaveServers[i] = new SlaveServer("localhost", MasterServerContext.getInstance().getConfig().getMainServerPort(),
-					LOGIN, PASSWORD);
+			slaveServers[i] = new SlaveServer("localhost",
+					MasterServerContext.getInstance().getConfig().getMainServerPort(), LOGIN, PASSWORD);
 		}
 	}
 
@@ -274,7 +271,5 @@ public class FactorTaskWebControllerTest {
 		httpMessage.setHeader(LOGIN_HEADER, REST_LOGIN);
 		httpMessage.setHeader(PASSWORD_HEADER, REST_PASSWORD);
 	}
-	
-	
 
 }

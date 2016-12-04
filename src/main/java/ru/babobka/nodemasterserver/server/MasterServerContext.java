@@ -36,7 +36,7 @@ public class MasterServerContext {
 			} else {
 				databaseNumber = RedisDatasource.TEST_DATABASE_NUMBER;
 			}
-			logger = new SimpleLogger("NodeServer", config.getLoggerFolder(), "server");
+			logger = new SimpleLogger("master", config.getLoggerFolder(), "master");
 			responseStorage = new ResponseStorage();
 			slaves = new Slaves(config.getMaxSlaves());
 			logger.log("ServerContext was successfuly created");

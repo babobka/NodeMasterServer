@@ -39,7 +39,7 @@ public final class ResponsesArray {
 		size = new AtomicInteger(0);
 	}
 
-	public boolean isComplete() {
+	public synchronized boolean isComplete() {
 		for (int i = 0; i < responseArray.length(); i++) {
 			if (responseArray.get(i) == null) {
 				return false;

@@ -10,14 +10,18 @@ import org.junit.After;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.model.User;
+import ru.babobka.nodemasterserver.server.MasterServer;
 import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeserials.RSA;
+import ru.babobka.nodeslaveserver.server.SlaveServer;
+import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 
 public class NodeUserServiceTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath("master_config.json"));
+		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
+		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
 	}
 
 	private NodeUsersService userService = NodeUsersServiceImpl.getInstance();

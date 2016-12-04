@@ -1,12 +1,11 @@
 package ru.babobka.nodemasterserver.webcontroller;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.net.URLEncoder;
 
 import org.apache.http.HttpMessage;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -23,7 +22,7 @@ import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
 import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 
-public class PrimeCounterTaskWebControllerTest {
+public class RedistributionTest {
 
 	static {
 		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
@@ -60,8 +59,7 @@ public class PrimeCounterTaskWebControllerTest {
 	public static void runServers() throws IOException, InterruptedException {
 		masterServer = MasterServer.getInstance();
 		masterServer.start();
-		createSlaves();
-		startSlaves();
+
 	}
 
 	@AfterClass
@@ -75,66 +73,33 @@ public class PrimeCounterTaskWebControllerTest {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		closeSlaves();
+		
 
 	}
 
 	@Test
-	public void testTenPrimes() {
+	public void testMillionPrimesOneSlaveDie() throws IOException, InterruptedException {
+		for (int i = 0; i < 5; i++) {
+			createSlaves();
+			startSlaves();
+			new Thread(new Runnable() {
 
-		for (int i = 0; i < 5000; i++) {
-			JSONObject jsonObject = getPrimesInRangeJson(0, 29);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 10);
-		}
-	}
+				@Override
+				public void run() {
+					try {
+						Thread.sleep(2000);
+						slaveServers[(int)(Math.random()*SLAVES)].interrupt();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 
-	@Test
-	public void testInvalidTask() {
-
-		assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000).getStatusLine().getStatusCode(), 400);
-
-	}
-
-	@Test
-	public void testMassInvalidTasks() {
-		for (int i = 0; i < 500; i++)
-			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000).getStatusLine().getStatusCode(), 400);
-
-	}
-
-	@Test
-	public void testMassDummyTasks() {
-		for (int i = 0; i < 500; i++)
-			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 1_000_001).getStatusLine().getStatusCode(), 200);
-
-	}
-
-	@Test
-	public void testThousandPrimes() {
-
-		for (int i = 0; i < 500; i++) {
-			JSONObject jsonObject = getPrimesInRangeJson(0, 7919);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 1000);
-		}
-	}
-
-
-	@Test
-	public void testTenThousandsPrimes() {
-
-		for (int i = 0; i < 50; i++) {
-			JSONObject jsonObject = getPrimesInRangeJson(0, 104729);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 10000);
-		}
-	}
-
-	@Test
-	public void testMillionPrimes() throws IOException {
-
-		for (int i = 0; i < 10; i++) {
+				}
+			}).start();
 			JSONObject jsonObject = getPrimesInRangeJson(0, 15_485_863);
 			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 1_000_000);
+			closeSlaves();
 		}
+
 	}
 
 	public static void createSlaves() throws IOException {
@@ -156,24 +121,6 @@ public class PrimeCounterTaskWebControllerTest {
 			slaveServers[i].interrupt();
 		}
 
-	}
-
-	private HttpResponse getPrimesInRangeHttpResponse(int begin, int end) {
-		HttpGet get = null;
-		try {
-			String url = URL + "/" + URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8") + "?begin=" + begin
-					+ "&end=" + end + "&noCache=true";
-			get = new HttpGet(url);
-			setCredentialHeaders(get);
-			return httpClient.execute(get);
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-
-		} finally {
-			if (get != null)
-				get.releaseConnection();
-		}
 	}
 
 	private JSONObject getPrimesInRangeJson(int begin, int end) {

@@ -34,7 +34,7 @@ public final class User {
 		}
 
 		if (hashedPassword != null && hashedPassword.length > 0) {
-			this.hashedPassword = hashedPassword;
+			this.hashedPassword = hashedPassword.clone();
 		} else {
 			throw new InvalidUserException("'password' must be set");
 		}
@@ -81,7 +81,7 @@ public final class User {
 	}
 
 	public byte[] getHashedPassword() {
-		return hashedPassword;
+		return hashedPassword == null ? null : (byte[]) hashedPassword.clone();
 	}
 
 	public String getName() {
@@ -97,7 +97,8 @@ public final class User {
 	}
 
 	public void setHashedPassword(byte[] hashedPassword) {
-		this.hashedPassword = hashedPassword;
+		if (hashedPassword != null)
+			this.hashedPassword = hashedPassword.clone();
 	}
 
 	public void setTaskCount(int taskCount) {
@@ -169,6 +170,5 @@ public final class User {
 		return "User [name=" + name + ", hashedPassword=" + Arrays.toString(hashedPassword) + ", taskCount=" + taskCount
 				+ ", email=" + email + "]";
 	}
-	
-	
+
 }

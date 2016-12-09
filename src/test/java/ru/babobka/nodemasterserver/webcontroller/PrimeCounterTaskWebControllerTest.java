@@ -26,8 +26,10 @@ import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 public class PrimeCounterTaskWebControllerTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
-		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
+		MasterServerContext
+				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
+		SlaveServerContext
+				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
 	}
 
 	private static SlaveServer[] slaveServers;
@@ -40,9 +42,9 @@ public class PrimeCounterTaskWebControllerTest {
 
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
-	private static final String REST_LOGIN = MasterServerContext.getInstance().getConfig().getRestServiceLogin();
+	private static final String REST_LOGIN = MasterServerContext.getConfig().getRestServiceLogin();
 
-	private static final String REST_PASSWORD = MasterServerContext.getInstance().getConfig().getRestServicePassword();
+	private static final String REST_PASSWORD = MasterServerContext.getConfig().getRestServicePassword();
 
 	private static final String LOGIN_HEADER = "X-Login";
 
@@ -50,7 +52,7 @@ public class PrimeCounterTaskWebControllerTest {
 
 	private static final HttpClient httpClient = HttpClientBuilder.create().build();
 
-	private static final int PORT = MasterServerContext.getInstance().getConfig().getWebPort();
+	private static final int PORT = MasterServerContext.getConfig().getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/task";
 
@@ -141,7 +143,7 @@ public class PrimeCounterTaskWebControllerTest {
 		slaveServers = new SlaveServer[SLAVES];
 		for (int i = 0; i < SLAVES; i++) {
 			slaveServers[i] = new SlaveServer("localhost",
-					MasterServerContext.getInstance().getConfig().getMainServerPort(), LOGIN, PASSWORD);
+					MasterServerContext.getConfig().getMainServerPort(), LOGIN, PASSWORD);
 		}
 	}
 

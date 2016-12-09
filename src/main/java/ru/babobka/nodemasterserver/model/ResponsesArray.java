@@ -11,6 +11,7 @@ import ru.babobka.nodeserials.NodeResponse;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -29,7 +30,11 @@ public final class ResponsesArray {
 
 	private static final String TASK = "Task";
 
+	private static final int HOUR_MILLIS = 1000 * 60 * 60;
+
 	private final AtomicReferenceArray<NodeResponse> responseArray;
+	
+	private final Object lock=new Object();
 
 	public ResponsesArray(int maxSize, TaskContext taskContext, Map<String, String> params) {
 		this.maxSize = maxSize;
@@ -76,13 +81,13 @@ public final class ResponsesArray {
 						}
 					} else if (taskContext.getConfig().isRaceStyle()
 							&& taskContext.getTask().getReducer().isValidResponse(response)) {
-						List<SlaveThread> clientThreads = MasterServerContext.getInstance().getSlaves()
+						List<SlaveThread> slaveThreads = MasterServerContext.getInstance().getSlaves()
 								.getListByTaskId(response.getTaskId());
 						try {
-							if (!clientThreads.isEmpty()) {
+							if (!slaveThreads.isEmpty()) {
 								MasterServerContext.getInstance().getLogger()
 										.log("Cancel all requests for task id " + response.getTaskId());
-								DistributionUtil.broadcastStopRequests(clientThreads,
+								DistributionUtil.broadcastStopRequests(slaveThreads,
 										new NodeRequest(response.getTaskId(), true, response.getTaskName()));
 							}
 						} catch (EmptyClusterException e) {
@@ -119,19 +124,23 @@ public final class ResponsesArray {
 
 	}
 
-	public synchronized List<NodeResponse> getResponseList() {
-		LinkedList<NodeResponse> responses = new LinkedList<>();
+	public synchronized List<NodeResponse> getResponseList() throws TimeoutException {
+		List<NodeResponse> responses = new LinkedList<>();
+		boolean completed = false;
 		try {
 			while (size.intValue() != responseArray.length()) {
-				this.wait();
+				this.wait(HOUR_MILLIS);
 			}
 			for (int i = 0; i < responseArray.length(); i++) {
 				responses.add((NodeResponse) responseArray.get(i));
 			}
-			return responses;
+			completed = true;
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			MasterServerContext.getInstance().getLogger().log(e);
+		}
+		if (!completed && !Thread.currentThread().isInterrupted()) {
+			throw new TimeoutException();
 		}
 		return responses;
 

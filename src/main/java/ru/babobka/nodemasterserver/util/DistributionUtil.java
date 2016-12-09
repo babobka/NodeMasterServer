@@ -21,12 +21,12 @@ public final class DistributionUtil {
 
 	}
 
-	public static void redistribute(SlaveThread clientThread) throws DistributionException, EmptyClusterException {
+	public static void redistribute(SlaveThread slaveThread) throws DistributionException, EmptyClusterException {
 
-		if (clientThread.getRequestMap().size() > 0) {
+		if (slaveThread.getRequestMap().size() > 0) {
 			if (!MasterServerContext.getInstance().getSlaves().isEmpty()) {
-				MasterServerContext.getInstance().getLogger().log(Level.INFO, "Redistribution");
-				Map<String, LinkedList<NodeRequest>> requestsByUri = clientThread.getRequestsGroupedByTask();
+				MasterServerContext.getInstance().getLogger().log("Redistribution");
+				Map<String, LinkedList<NodeRequest>> requestsByUri = slaveThread.getRequestsGroupedByTask();
 				for (Map.Entry<String, LinkedList<NodeRequest>> requestByUriEntry : requestsByUri.entrySet()) {
 					try {
 						broadcastRequests(requestByUriEntry.getKey(), requestByUriEntry.getValue(), MAX_RETRY);
@@ -36,7 +36,8 @@ public final class DistributionUtil {
 					}
 				}
 			} else {
-				MasterServerContext.getInstance().getLogger().log(Level.SEVERE, "Redistribution failed due to empty cluster");
+				MasterServerContext.getInstance().getLogger().log(Level.SEVERE,
+						"Redistribution failed due to empty cluster");
 				throw new EmptyClusterException();
 			}
 		}
@@ -56,6 +57,7 @@ public final class DistributionUtil {
 
 	public static void broadcastRequests(String taskName, NodeRequest[] requests)
 			throws EmptyClusterException, DistributionException {
+
 		broadcastRequests(taskName, requests, 0, MAX_RETRY);
 	}
 
@@ -78,7 +80,7 @@ public final class DistributionUtil {
 				}
 			} catch (IOException e) {
 				if (retry < maxRetry) {
-					MasterServerContext.getInstance().getLogger().log(Level.INFO, "Broadcast retry " + retry);
+					MasterServerContext.getInstance().getLogger().log("Broadcast retry " + retry);
 					broadcastRequests(taskName, MathUtil.subArray(requests, i), retry + 1, maxRetry);
 				} else {
 					throw new DistributionException(e);
@@ -89,21 +91,19 @@ public final class DistributionUtil {
 
 	}
 
-	public static void broadcastStopRequests(List<SlaveThread> clientThreads, NodeRequest stopRequest)
+	public static void broadcastStopRequests(List<SlaveThread> slaveThreads, NodeRequest stopRequest)
 			throws EmptyClusterException {
-		if (clientThreads.isEmpty()) {
+		if (slaveThreads.isEmpty()) {
 			throw new EmptyClusterException();
 		} else {
-
-			Iterator<SlaveThread> iterator;
-			iterator = clientThreads.iterator();
-			while (iterator.hasNext()) {
+			for (SlaveThread slaveThread : slaveThreads) {
 				try {
-					iterator.next().sendStopRequest(stopRequest);
+					slaveThread.sendStopRequest(stopRequest);
 				} catch (Exception e) {
 					MasterServerContext.getInstance().getLogger().log(Level.SEVERE, e);
 				}
 			}
+
 		}
 
 	}

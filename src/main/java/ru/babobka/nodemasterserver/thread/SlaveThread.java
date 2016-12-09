@@ -1,12 +1,13 @@
 package ru.babobka.nodemasterserver.thread;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.logging.Level;
@@ -31,7 +32,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	private final RSA rsa;
 
-	private volatile Set<String> taskSet;
+	private final Set<String> availableTasksSet = new HashSet<>();
 
 	private static final int RSA_KEY_BIT_LENGTH = 256;
 
@@ -39,7 +40,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	private final AuthService authService = AuthServiceImpl.getInstance();
 
-	private final Map<Long, NodeRequest> requestMap = new ConcurrentHashMap<>();
+	private final Map<UUID, NodeRequest> requestMap = new ConcurrentHashMap<>();
 
 	private volatile String login;
 
@@ -55,8 +56,8 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		}
 	}
 
-	public Set<String> getTaskSet() {
-		return taskSet;
+	public Set<String> getAvailableTasksSet() {
+		return availableTasksSet;
 	}
 
 	public String getLogin() {
@@ -67,7 +68,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		return socket;
 	}
 
-	public Map<Long, NodeRequest> getRequestMap() {
+	public Map<UUID, NodeRequest> getRequestMap() {
 		return requestMap;
 	}
 
@@ -88,7 +89,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 	private synchronized void setBadAndCancelAllTheRequests() {
 		if (!requestMap.isEmpty()) {
 			NodeRequest request;
-			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
+			for (Map.Entry<UUID, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
 				MasterServerContext.getInstance().getResponseStorage().addBadResponse(request.getTaskId());
 				try {
@@ -106,7 +107,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 	private synchronized void setBadAllTheRequests() {
 		if (!requestMap.isEmpty()) {
 			NodeRequest request;
-			for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
+			for (Map.Entry<UUID, NodeRequest> requestEntry : requestMap.entrySet()) {
 				request = requestEntry.getValue();
 				MasterServerContext.getInstance().getResponseStorage().addBadResponse(request.getTaskId());
 			}
@@ -122,8 +123,8 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 	}
 
 	public synchronized void sendStopRequest(NodeRequest stopRequest) throws IOException {
-		for (Map.Entry<Long, NodeRequest> requestEntry : requestMap.entrySet()) {
-			if (requestEntry.getValue().getTaskId() == stopRequest.getTaskId()) {
+		for (Map.Entry<UUID, NodeRequest> requestEntry : requestMap.entrySet()) {
+			if (requestEntry.getValue().getTaskId().equals(stopRequest.getTaskId())) {
 				MasterServerContext.getInstance().getResponseStorage().addStopResponse(stopRequest.getTaskId());
 				requestMap.remove(requestEntry.getValue().getRequestId());
 			}
@@ -139,35 +140,41 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 	@Override
 	public void run() {
 		try {
-			socket.setSoTimeout(MasterServerContext.getInstance().getConfig().getAuthTimeOutMillis());
+			socket.setSoTimeout(MasterServerContext.getConfig().getAuthTimeOutMillis());
 			AuthResult authResult = authService.getAuthResult(rsa, socket);
 			if (authResult.isValid()) {
-				this.login = authResult.getLogin();
+				login = authResult.getLogin();
 				if (!MasterServerContext.getInstance().getSlaves().add(this)) {
 					throw new IllegalStateException("Cluster is full");
 				}
-				this.taskSet = authResult.getTaskSet();
+				if (authResult.getTaskSet() != null) {
+					availableTasksSet.addAll(authResult.getTaskSet());
+				}
 				MasterServerContext.getInstance().getLogger().log(login + " from " + socket + " was logged");
-				
+
 				while (!Thread.currentThread().isInterrupted()) {
-					socket.setSoTimeout(MasterServerContext.getInstance().getConfig().getRequestTimeOutMillis());
+					socket.setSoTimeout(MasterServerContext.getConfig().getRequestTimeOutMillis());
 					NodeResponse response = (NodeResponse) StreamUtil.receiveObject(socket);
 					if (!response.isHeartBeatingResponse()) {
 						MasterServerContext.getInstance().getLogger().log("Got response " + response);
 						requestMap.remove(response.getResponseId());
-						MasterServerContext.getInstance().getLogger().log("Remove response " + response.getResponseId());
+						MasterServerContext.getInstance().getLogger()
+								.log("Remove response " + response.getResponseId());
 						if (MasterServerContext.getInstance().getResponseStorage().exists(response.getTaskId())) {
-							MasterServerContext.getInstance().getResponseStorage().get(response.getTaskId()).add(response);
+							MasterServerContext.getInstance().getResponseStorage().get(response.getTaskId())
+									.add(response);
 						}
 					}
 				}
-				
+
 			} else {
 				MasterServerContext.getInstance().getLogger().log(socket + " auth fail");
 			}
 
-		} catch (IOException e) {
-			if (!(e instanceof EOFException) && (!Thread.currentThread().isInterrupted() || !socket.isClosed())) {
+		}
+
+		catch (IOException e) {
+			if (!Thread.currentThread().isInterrupted()) {
 				MasterServerContext.getInstance().getLogger().log(e);
 			}
 			MasterServerContext.getInstance().getLogger().log(Level.WARNING, "Connection is closed " + socket);
@@ -176,7 +183,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 		} finally {
 			MasterServerContext.getInstance().getLogger().log("Removing connection " + socket);
 			MasterServerContext.getInstance().getSlaves().remove(this);
-			
+
 			synchronized (SlaveThread.class) {
 				if (!requestMap.isEmpty()) {
 					MasterServerContext.getInstance().getLogger().log("Slave has a requests to redistribute");
@@ -206,7 +213,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 
 	public Map<String, LinkedList<NodeRequest>> getRequestsGroupedByTask() {
 		Map<String, LinkedList<NodeRequest>> requestsByTaskName = new HashMap<>();
-		for (Map.Entry<Long, NodeRequest> requestEntry : this.getRequestMap().entrySet()) {
+		for (Map.Entry<UUID, NodeRequest> requestEntry : this.getRequestMap().entrySet()) {
 			if (requestsByTaskName.containsKey(requestEntry.getValue().getTaskName())) {
 				requestsByTaskName.get(requestEntry.getValue().getTaskName()).add(requestEntry.getValue());
 			} else {

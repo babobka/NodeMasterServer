@@ -19,18 +19,20 @@ import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 public class SlaveThreadsTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
-		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
+		MasterServerContext.setConfig(StreamUtil.getLocalResource(
+				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
+		SlaveServerContext.setConfig(StreamUtil.getLocalResource(
+				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
 	}
 
-	private final int n = 1000;
-	private final int maxThreads = 10;
-	private Slaves slaves;
-	private final SlaveThread slaveThreadMock = new SlaveThread(new Socket());
+	static final int N = 1000;
+	static final int MAX_THREADS = 10;
+	Slaves slaves;
+	final SlaveThread slaveThreadMock = new SlaveThread(new Socket());
 
 	@Before
 	public void setUp() {
-		slaves = new Slaves(n);
+		slaves = new Slaves(N);
 	}
 
 	@After
@@ -46,7 +48,7 @@ public class SlaveThreadsTest {
 	@Test
 	public void testMaxSize() {
 
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < N; i++) {
 			assertTrue(slaves.add(slaveThreadMock));
 		}
 		assertFalse(slaves.add(slaveThreadMock));
@@ -86,14 +88,14 @@ public class SlaveThreadsTest {
 	@Test
 	public void testAddParallel() throws InterruptedException {
 
-		Thread[] addThreads = new Thread[maxThreads];
+		Thread[] addThreads = new Thread[MAX_THREADS];
 		final AtomicInteger succededAdds = new AtomicInteger();
 		for (int i = 0; i < addThreads.length; i++) {
 			addThreads[i] = new Thread(new Runnable() {
 
 				@Override
 				public void run() {
-					for (int i = 0; i < n; i++) {
+					for (int i = 0; i < N; i++) {
 						if (slaves.add(slaveThreadMock)) {
 							succededAdds.incrementAndGet();
 						}
@@ -108,24 +110,24 @@ public class SlaveThreadsTest {
 		for (Thread addThread : addThreads) {
 			addThread.join();
 		}
-		assertEquals(succededAdds.intValue(), n);
-		assertEquals(slaves.getClusterSize(), n);
-		assertEquals(slaves.getFullList().size(), n);
+		assertEquals(succededAdds.intValue(), N);
+		assertEquals(slaves.getClusterSize(), N);
+		assertEquals(slaves.getFullList().size(), N);
 	}
 
 	@Test
 	public void testRemoveParallel() throws InterruptedException {
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < N; i++) {
 			slaves.add(slaveThreadMock);
 		}
-		Thread[] removeThreads = new Thread[maxThreads];
+		Thread[] removeThreads = new Thread[MAX_THREADS];
 		final AtomicInteger succededRemoves = new AtomicInteger();
 		for (int i = 0; i < removeThreads.length; i++) {
 			removeThreads[i] = new Thread(new Runnable() {
 
 				@Override
 				public void run() {
-					for (int i = 0; i < n; i++) {
+					for (int i = 0; i < N; i++) {
 						if (slaves.remove(slaveThreadMock)) {
 							succededRemoves.incrementAndGet();
 						}
@@ -140,7 +142,7 @@ public class SlaveThreadsTest {
 		for (Thread removeThread : removeThreads) {
 			removeThread.join();
 		}
-		assertEquals(succededRemoves.intValue(), n);
+		assertEquals(succededRemoves.intValue(), N);
 		assertEquals(slaves.getClusterSize(), 0);
 		assertTrue(slaves.isEmpty());
 		assertTrue(slaves.getFullList().isEmpty());

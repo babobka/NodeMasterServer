@@ -16,10 +16,12 @@ import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 public class ServerTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
-		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
+		MasterServerContext
+				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
+		SlaveServerContext
+				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
 	}
-	
+
 	private static SlaveServer[] slaveServers;
 
 	private static final int SLAVES = 5;
@@ -31,8 +33,6 @@ public class ServerTest {
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
 	private static final int TESTS = 5;
-
-
 
 	@BeforeClass
 	public static void runMasterServer() throws IOException {
@@ -60,7 +60,7 @@ public class ServerTest {
 	@Test
 	public void logInTooMuch() throws IOException {
 
-		createSlaves(MasterServerContext.getInstance().getConfig().getMaxSlaves() + 1);
+		createSlaves(MasterServerContext.getConfig().getMaxSlaves() + 1);
 		startSlaves();
 		assertEquals(MasterServerContext.getInstance().getSlaves().getClusterSize(), SLAVES);
 		closeSlaves();
@@ -82,7 +82,7 @@ public class ServerTest {
 	public void logFailBadAddress() {
 
 		try {
-			new SlaveServer("localhost123", MasterServerContext.getInstance().getConfig().getMainServerPort(),
+			new SlaveServer("localhost123", MasterServerContext.getConfig().getMainServerPort(),
 					"test_user", "abc");
 			fail();
 		} catch (IOException e) {
@@ -94,7 +94,7 @@ public class ServerTest {
 	@Test
 	public void logFailBadPassword() {
 		try {
-			new SlaveServer("localhost", MasterServerContext.getInstance().getConfig().getMainServerPort(),
+			new SlaveServer("localhost", MasterServerContext.getConfig().getMainServerPort(),
 					LOGIN + "abc", PASSWORD);
 			fail();
 		} catch (IOException e) {

@@ -39,6 +39,10 @@ public final class StreamUtil {
 	public static String getLocalResourcePath(Class<?> clazz, String resourceName) {
 		return clazz.getClassLoader().getResource(resourceName).getPath();
 	}
+	
+	public static InputStream getLocalResource(Class<?> clazz, String resourceName) {
+		return clazz.getClassLoader().getResourceAsStream(resourceName);
+	}
 
 	public static String readFile(InputStream is) {
 

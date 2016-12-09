@@ -4,6 +4,7 @@ import ru.babobka.nodeserials.NodeResponse;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -11,49 +12,49 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ResponseStorage {
 
-	private final Map<Long, ResponsesArray> responsesMap;
+	private final Map<UUID, ResponsesArray> responsesMap;
 
 	public ResponseStorage() {
 		responsesMap = new ConcurrentHashMap<>();
 	}
 
-	public void put(long taskId, ResponsesArray responses) {
+	public void put(UUID taskId, ResponsesArray responses) {
 		responsesMap.put(taskId, responses);
 	}
 
-	public ResponsesArray get(long taskId) {
+	public ResponsesArray get(UUID taskId) {
 
 		return responsesMap.get(taskId);
 	}
 
-	public boolean exists(long taskId) {
+	public boolean exists(UUID taskId) {
 		return responsesMap.containsKey(taskId);
 	}
 
-	public void addBadResponse(long taskId) {
+	public void addBadResponse(UUID taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			responsesArray.add(NodeResponse.badResponse(taskId));
 		}
 	}
 
-	public void addStopResponse(long taskId) {
+	public void addStopResponse(UUID taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			responsesArray.add(NodeResponse.stoppedResponse(taskId));
 		}
 	}
 
-	public void setStopAllResponses(long taskId) {
+	public void setStopAllResponses(UUID taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			responsesArray.fill(NodeResponse.stoppedResponse(taskId));
 		}
 	}
 
-	public synchronized Map<Long, ResponsesArrayMeta> getRunningTasksMetaMap() {
-		Map<Long, ResponsesArrayMeta> taskMap = new HashMap<>();
-		for (Map.Entry<Long, ResponsesArray> entry : responsesMap.entrySet()) {
+	public synchronized Map<UUID, ResponsesArrayMeta> getRunningTasksMetaMap() {
+		Map<UUID, ResponsesArrayMeta> taskMap = new HashMap<>();
+		for (Map.Entry<UUID, ResponsesArray> entry : responsesMap.entrySet()) {
 			if (!entry.getValue().isComplete()) {
 				taskMap.put(entry.getKey(), entry.getValue().getMeta());
 			}
@@ -61,7 +62,7 @@ public class ResponseStorage {
 		return taskMap;
 	}
 
-	public ResponsesArrayMeta getTaskMeta(long taskId) {
+	public ResponsesArrayMeta getTaskMeta(UUID taskId) {
 		ResponsesArray responsesArray = responsesMap.get(taskId);
 		if (responsesArray != null) {
 			return responsesArray.getMeta();
@@ -69,7 +70,7 @@ public class ResponseStorage {
 		return null;
 	}
 
-	public synchronized void clear(long taskId) {
+	public synchronized void clear(UUID taskId) {
 		responsesMap.remove(taskId);
 	}
 

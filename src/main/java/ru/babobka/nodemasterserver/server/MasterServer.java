@@ -3,6 +3,7 @@ package ru.babobka.nodemasterserver.server;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.concurrent.TimeoutException;
 
 import org.json.JSONException;
 
@@ -12,6 +13,7 @@ import ru.babobka.nodemasterserver.listener.OnIllegalArgumentExceptionListener;
 import ru.babobka.nodemasterserver.listener.OnIllegalStateExceptionListener;
 import ru.babobka.nodemasterserver.listener.OnJSONExceptionListener;
 import ru.babobka.nodemasterserver.listener.OnTaskNotFoundExceptionListener;
+import ru.babobka.nodemasterserver.listener.OnTimeoutExceptionListener;
 import ru.babobka.nodemasterserver.model.Slaves;
 import ru.babobka.nodemasterserver.runnable.HeartBeatingRunnable;
 import ru.babobka.nodemasterserver.service.NodeUsersService;
@@ -27,7 +29,6 @@ import ru.babobka.nodemasterserver.webcontroller.ClusterInfoWebController;
 import ru.babobka.nodemasterserver.webcontroller.NodeUsersCRUDWebController;
 import ru.babobka.nodemasterserver.webcontroller.TaskWebController;
 import ru.babobka.nodemasterserver.webcontroller.TasksInfoWebController;
-
 import ru.babobka.vsjws.webcontroller.WebFilter;
 import ru.babobka.vsjws.webserver.WebServer;
 
@@ -35,6 +36,8 @@ import ru.babobka.vsjws.webserver.WebServer;
  * Created by dolgopolov.a on 16.07.15.
  */
 public final class MasterServer extends Thread {
+
+	public static final String MASTER_SERVER_TEST_CONFIG = "master_config.json";
 
 	private final NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
@@ -50,20 +53,18 @@ public final class MasterServer extends Thread {
 
 	private MasterServer() throws IOException {
 
-		MasterServerContext masterServerContext = MasterServerContext.getInstance();
-
-		if (!MasterServerContext.getInstance().getConfig().isDebugDataBase()
+		if (!MasterServerContext.getConfig().isDebugDataBase()
 				&& !RedisDatasource.getInstance().getPool().getResource().isConnected()) {
 			throw new IOException("Database is not connected");
 		}
-		if (!MasterServerContext.getInstance().getConfig().isProductionDataBase()) {
+		if (!MasterServerContext.getConfig().isProductionDataBase()) {
 			userService.addTestUser();
 		}
 
-		listenerThread = new InputListenerThread(masterServerContext.getConfig().getMainServerPort());
+		listenerThread = new InputListenerThread(MasterServerContext.getConfig().getMainServerPort());
 		heartBeatingThread = new Thread(new HeartBeatingRunnable());
-		webServer = new WebServer("rest server", masterServerContext.getConfig().getWebPort(),
-				masterServerContext.getConfig().getLoggerFolder() + File.separator + "rest_log");
+		webServer = new WebServer("rest server", MasterServerContext.getConfig().getWebPort(),
+				MasterServerContext.getConfig().getLoggerFolder() + File.separator + "rest_log");
 
 		WebFilter authWebFilter = new AuthWebFilter();
 		WebFilter cacheWebFilter = new CacheWebFilter();
@@ -81,6 +82,7 @@ public final class MasterServer extends Thread {
 		webServer.addExceptionListener(IllegalArgumentException.class, new OnIllegalArgumentExceptionListener());
 		webServer.addExceptionListener(IllegalStateException.class, new OnIllegalStateExceptionListener());
 		webServer.addExceptionListener(TaskNotFoundException.class, new OnTaskNotFoundExceptionListener());
+		webServer.addExceptionListener(TimeoutException.class, new OnTimeoutExceptionListener());
 	}
 
 	public static MasterServer getInstance() throws IOException {
@@ -137,9 +139,10 @@ public final class MasterServer extends Thread {
 	}
 
 	public static void main(String[] args) throws IOException {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
+		MasterServerContext.setConfig(StreamUtil.getLocalResource(MasterServer.class, "master_config.json"));
 		MasterServer server = new MasterServer();
 		server.start();
+
 	}
 
 }

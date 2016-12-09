@@ -20,17 +20,19 @@ import ru.babobka.nodeslaveserver.server.SlaveServerContext;
 public class NodeUserServiceTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
-		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
+		MasterServerContext
+				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
+		SlaveServerContext
+				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
 	}
 
 	private NodeUsersService userService = NodeUsersServiceImpl.getInstance();
 
-	private final String userName = "bbk_test";
+	private static final String USER_NAME = "bbk_test";
 
-	private final String password = "123";
+	private static final String PASSWORD = "123";
 
-	private final User testUser = new User(userName, password, 0, "test@email.com");
+	private final User testUser = new User(USER_NAME, PASSWORD, 0, "test@email.com");
 
 	@After
 	public void tearDown() {
@@ -99,7 +101,7 @@ public class NodeUserServiceTest {
 	@Test
 	public void testBadPasswordAuth() {
 		userService.add(testUser);
-		BigInteger integerHashedPassword = RSA.stringToBigInteger(password + "abc");
+		BigInteger integerHashedPassword = RSA.stringToBigInteger(PASSWORD + "abc");
 		assertFalse(userService.auth(testUser.getName(), integerHashedPassword));
 	}
 

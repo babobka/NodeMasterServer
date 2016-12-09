@@ -14,7 +14,7 @@ import ru.babobka.nodeserials.RSA;
 public class NodeUsersServiceImpl implements NodeUsersService {
 
 	private final NodeUsersDAO userDAO = UsersDAOFactory
-			.get(MasterServerContext.getInstance().getConfig().isDebugDataBase());
+			.get(MasterServerContext.getConfig().isDebugDataBase());
 
 	private static volatile NodeUsersServiceImpl instance;
 

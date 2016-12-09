@@ -3,6 +3,8 @@ package ru.babobka.nodemasterserver.service;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.exception.DistributionException;
@@ -46,7 +48,7 @@ public class TaskServiceImpl implements TaskService {
 		return localInstance;
 	}
 
-	private void startTask(TaskContext taskContext, long taskId, Map<String, String> arguments)
+	private void startTask(TaskContext taskContext, UUID taskId, Map<String, String> arguments)
 			throws EmptyClusterException, DistributionException {
 		int currentClusterSize;
 		String taskName = taskContext.getConfig().getName();
@@ -58,7 +60,6 @@ public class TaskServiceImpl implements TaskService {
 		MasterServerContext.getInstance().getResponseStorage().put(taskId,
 				new ResponsesArray(currentClusterSize, taskContext, arguments));
 		if (currentClusterSize > 0) {
-
 			NodeRequest[] requests = taskContext.getTask().getDistributor().distribute(arguments, currentClusterSize,
 					taskId);
 			DistributionUtil.broadcastRequests(taskName, requests);
@@ -69,15 +70,16 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	private boolean isRequestDataIsTooSmall(SubTask task, Map<String, String> arguments) {
-		NodeRequest request = task.getDistributor().distribute(arguments, 1, 0)[0];
-		if (task.isRequestDataTooSmall(request.getAddition())) {
+		NodeRequest request = task.getDistributor().distribute(arguments, 1, UUID.randomUUID())[0];
+
+		if (task.isRequestDataTooSmall(request)) {
 			return true;
 		}
 		return false;
 
 	}
 
-	private TaskStartResult startTask(Map<String, String> requestArguments, TaskContext taskContext, long taskId) {
+	private TaskStartResult startTask(Map<String, String> requestArguments, TaskContext taskContext, UUID taskId) {
 
 		RequestDistributor requestDistributor = taskContext.getTask().getDistributor();
 		if (requestDistributor.isValidArguments(requestArguments)) {
@@ -107,7 +109,7 @@ public class TaskServiceImpl implements TaskService {
 
 	}
 
-	private Map<String, Serializable> getTaskResult(long taskId) {
+	private Map<String, Serializable> getTaskResult(UUID taskId) throws TimeoutException {
 		try {
 			ResponseStorage responseStorage = MasterServerContext.getInstance().getResponseStorage();
 			ResponsesArray responsesArray = responseStorage.get(taskId);
@@ -118,6 +120,10 @@ public class TaskServiceImpl implements TaskService {
 			} else {
 				MasterServerContext.getInstance().getLogger().log(Level.SEVERE, "No such task");
 			}
+		} catch (TimeoutException e) {
+			MasterServerContext.getInstance().getLogger().log(Level.WARNING, "getTaskResult() reaches timeout");
+			throw e;
+
 		} catch (Exception e) {
 			MasterServerContext.getInstance().getLogger().log(e);
 		}
@@ -125,11 +131,11 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	@Override
-	public TaskResult getResult(Map<String, String> requestArguments, TaskContext taskContext) {
+	public TaskResult getResult(Map<String, String> requestArguments, TaskContext taskContext) throws TimeoutException {
 
 		Map<String, Serializable> resultMap;
 
-		Long taskId = (long) (Math.random() * Integer.MAX_VALUE);
+		UUID taskId = UUID.randomUUID();
 		try {
 			TaskStartResult startResult = startTask(requestArguments, taskContext, taskId);
 			if (!startResult.isFailed()) {
@@ -152,7 +158,7 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	@Override
-	public TaskResult cancelTask(long taskId) {
+	public TaskResult cancelTask(UUID taskId) {
 		try {
 			List<SlaveThread> clientThreads = MasterServerContext.getInstance().getSlaves().getListByTaskId(taskId);
 			MasterServerContext.getInstance().getLogger().log("Trying to cancel task " + taskId);

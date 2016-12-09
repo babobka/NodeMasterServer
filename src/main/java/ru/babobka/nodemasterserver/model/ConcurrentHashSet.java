@@ -4,13 +4,12 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by dolgopolov.a on 22.12.15.
  */
-class ConcurrentHashSet<E> extends AbstractSet<E> implements Set<E> {
+class ConcurrentHashSet<E> extends AbstractSet<E> {
 	private final Map<E, Object> map = new ConcurrentHashMap<>();
 
 	private static final Object dummy = new Object();

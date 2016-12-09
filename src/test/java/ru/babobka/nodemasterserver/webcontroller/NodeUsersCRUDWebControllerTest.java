@@ -31,13 +31,15 @@ public class NodeUsersCRUDWebControllerTest {
 	// TODO 'java.net.SocketException: Broken pipe' was found. Fix it.
 	
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
-		SlaveServerContext.setConfigPath(StreamUtil.getLocalResourcePath(SlaveServer.class, "slave_config.json"));
+		MasterServerContext
+				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
+		SlaveServerContext
+				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
 	}
 
 	private static MasterServer masterServer;
 
-	private static final int PORT = MasterServerContext.getInstance().getConfig().getWebPort();
+	private static final int PORT = MasterServerContext.getConfig().getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/users";
 
@@ -47,9 +49,9 @@ public class NodeUsersCRUDWebControllerTest {
 
 	private static JSONObject badEmailUserJson;
 
-	private static final String LOGIN = MasterServerContext.getInstance().getConfig().getRestServiceLogin();
+	private static final String LOGIN = MasterServerContext.getConfig().getRestServiceLogin();
 
-	private static final String PASSWORD = MasterServerContext.getInstance().getConfig().getRestServicePassword();
+	private static final String PASSWORD = MasterServerContext.getConfig().getRestServicePassword();
 
 	private static final String LOGIN_HEADER = "X-Login";
 

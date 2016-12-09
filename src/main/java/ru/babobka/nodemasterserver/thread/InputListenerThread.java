@@ -28,7 +28,7 @@ public class InputListenerThread extends Thread {
 					if (MasterServerContext.getInstance().getSlaves().isFittable()) {
 						new SlaveThread(socket).start();
 					} else {
-						MasterServerContext.getInstance().getLogger().log(Level.WARNING,"Can not fit new slave");
+						MasterServerContext.getInstance().getLogger().log(Level.WARNING, "Can not fit new slave");
 						socket.close();
 					}
 				} catch (Exception e) {
@@ -40,13 +40,13 @@ public class InputListenerThread extends Thread {
 
 			}
 		} finally {
-			if (ss != null) {
-				try {
-					ss.close();
-				} catch (IOException e) {
-					MasterServerContext.getInstance().getLogger().log(e);
-				}
+
+			try {
+				ss.close();
+			} catch (IOException e) {
+				MasterServerContext.getInstance().getLogger().log(e);
 			}
+
 		}
 		MasterServerContext.getInstance().getLogger().log("InputListenerThread is done");
 	}

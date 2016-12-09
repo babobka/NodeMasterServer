@@ -7,7 +7,7 @@ import ru.babobka.vsjws.model.HttpRequest;
 
 public class CacheServiceImpl implements CacheService {
 
-	private final CacheDAO cacheDAO = CacheDAOFactory.get(MasterServerContext.getInstance().getConfig().isDebugDataBase());
+	private final CacheDAO cacheDAO = CacheDAOFactory.get(MasterServerContext.getConfig().isDebugDataBase());
 
 	private static volatile CacheServiceImpl instance;
 

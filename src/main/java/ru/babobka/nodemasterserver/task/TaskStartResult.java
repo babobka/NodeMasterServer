@@ -1,8 +1,10 @@
 package ru.babobka.nodemasterserver.task;
 
+import java.util.UUID;
+
 public class TaskStartResult {
 
-	private final long taskId;
+	private final UUID taskId;
 
 	private final boolean failed;
 
@@ -10,14 +12,14 @@ public class TaskStartResult {
 
 	private final String message;
 
-	public TaskStartResult(long taskId, boolean failed, boolean systemError, String message) {
+	public TaskStartResult(UUID taskId, boolean failed, boolean systemError, String message) {
 		this.taskId = taskId;
 		this.failed = failed;
 		this.message = message;
 		this.systemError = systemError;
 	}
 
-	public TaskStartResult(long taskId) {
+	public TaskStartResult(UUID taskId) {
 		this(taskId, false, false, null);
 	}
 
@@ -25,7 +27,7 @@ public class TaskStartResult {
 		return systemError;
 	}
 
-	public long getTaskId() {
+	public UUID getTaskId() {
 		return taskId;
 	}
 

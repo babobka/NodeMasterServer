@@ -15,9 +15,9 @@ interface LogBuilder {
 	static Logger build(String loggerName, String runningFolder, String prefix) throws IOException {
 
 		Logger logger = Logger.getLogger(loggerName + "_" + System.currentTimeMillis());
-		File folder = new File(runningFolder + File.separator + "log" + File.separator);
-		if (!folder.exists()) {
-			folder.mkdir();
+		File folder = new File(runningFolder + File.separator);
+		if (!folder.exists() && !folder.mkdirs()) {
+			throw new IOException("Can not create folder " + folder);
 		}
 		String fileName = folder.getAbsolutePath() + File.separator + prefix + "_" + System.currentTimeMillis()
 				+ ".log";

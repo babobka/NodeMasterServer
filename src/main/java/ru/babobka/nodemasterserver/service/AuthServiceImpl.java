@@ -3,7 +3,7 @@ package ru.babobka.nodemasterserver.service;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import ru.babobka.nodemasterserver.model.AuthResult;
@@ -44,10 +44,9 @@ public class AuthServiceImpl implements AuthService {
 			StreamUtil.sendObject(rsa.getPublicKey(), socket);
 			NodeResponse authResponse = (NodeResponse) StreamUtil.receiveObject(socket);
 			if (authResponse.isAuthResponse()) {
-				BigInteger integerHashedPassword = rsa.decrypt((BigInteger) authResponse.getAddition().get("password"));
-				String login = (String) authResponse.getAddition().get("login");
-				@SuppressWarnings("unchecked")
-				LinkedList<String> tasksList = (LinkedList<String>) authResponse.getAddition().get("tasksList");
+				BigInteger integerHashedPassword = rsa.decrypt(authResponse.getAdditionValue("password"));
+				String login = authResponse.getAdditionValue("login");
+				List<String> tasksList = authResponse.getAdditionValue("tasksList");
 				if (tasksList != null) {
 					if (tasksList.isEmpty()) {
 						return new AuthResult(false);
@@ -69,6 +68,6 @@ public class AuthServiceImpl implements AuthService {
 		} catch (Exception e) {
 			MasterServerContext.getInstance().getLogger().log(e);
 			return new AuthResult(false);
-		} 
+		}
 	}
 }

@@ -1,5 +1,7 @@
 package ru.babobka.nodemasterserver.dao;
 
+import java.io.IOException;
+
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
@@ -48,7 +50,7 @@ class CacheDAOImpl implements CacheDAO {
 			t.expire(key, MONTH_SECONDS);
 			t.exec();
 			return true;
-		} catch (Exception e) {
+		} catch (IOException e) {
 			MasterServerContext.getInstance().getLogger().log(e);
 		}
 		return false;

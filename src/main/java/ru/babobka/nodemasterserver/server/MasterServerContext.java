@@ -1,6 +1,6 @@
 package ru.babobka.nodemasterserver.server;
 
-import java.io.File;
+import java.io.InputStream;
 import java.util.logging.Level;
 
 import ru.babobka.nodemasterserver.builder.JSONFileServerConfigBuilder;
@@ -11,9 +11,7 @@ import ru.babobka.nodemasterserver.model.ResponseStorage;
 
 public class MasterServerContext {
 
-	private static String configPath;
-
-	private final MasterServerConfig config;
+	private static volatile MasterServerConfig config;
 
 	private final SimpleLogger logger;
 
@@ -27,10 +25,9 @@ public class MasterServerContext {
 
 	private MasterServerContext() {
 		try {
-			if (configPath == null) {
-				throw new IllegalStateException("'configPath' was not specified.");
+			if (config == null) {
+				throw new IllegalStateException("Configuration was not specified.");
 			}
-			config = JSONFileServerConfigBuilder.build(configPath);
 			if (config.isProductionDataBase()) {
 				databaseNumber = RedisDatasource.PRODUCTION_DATABASE_NUMBER;
 			} else {
@@ -60,7 +57,7 @@ public class MasterServerContext {
 		return localInstance;
 	}
 
-	public MasterServerConfig getConfig() {
+	public static MasterServerConfig getConfig() {
 		return config;
 
 	}
@@ -81,21 +78,11 @@ public class MasterServerContext {
 		return databaseNumber;
 	}
 
-	public static synchronized String getConfigPath() {
-		return configPath;
-	}
-
-	public static synchronized void setConfigPath(String configPath) {
+	public static void setConfig(InputStream configFileInputStream) {
 		if (instance == null) {
-			File f = new File(configPath);
-			if (f.exists() && !f.isDirectory()) {
-				MasterServerContext.configPath = configPath;
-			} else {
-				throw new RuntimeException("'configPath' " + configPath + " doesn't exists");
-			}
-
+			config = JSONFileServerConfigBuilder.build(configFileInputStream);
 		} else {
-			instance.logger.log(Level.WARNING, "Can not define 'configFolder' value. Context is already created.");
+			instance.logger.log(Level.WARNING, "Can not redefine configuration. Context is already created.");
 		}
 	}
 

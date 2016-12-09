@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -23,18 +24,18 @@ public class Slaves {
 		this.threads = new AtomicReferenceArray<>(maxSize);
 	}
 
-	public boolean isFittable() {
+	public synchronized boolean isFittable() {
 		return size.get() <= threads.length();
 	}
 
 	public synchronized List<ClusterUser> getCurrentClusterUserList() {
 		List<ClusterUser> clusterUserList = new ArrayList<>();
-		SlaveThread ct;
+		SlaveThread st;
 		for (int i = 0; i < threads.length(); i++) {
-			if ((ct = threads.get(i)) != null) {
+			if ((st = threads.get(i)) != null) {
 				clusterUserList
-						.add(new ClusterUser(ct.getLogin(), ct.getSocket().getLocalPort(), ct.getSocket().getPort(),
-								ct.getSocket().getInetAddress().getCanonicalHostName(), ct.getRequestCount()));
+						.add(new ClusterUser(st.getLogin(), st.getSocket().getLocalPort(), st.getSocket().getPort(),
+								st.getSocket().getInetAddress().getCanonicalHostName(), st.getRequestCount()));
 			}
 		}
 
@@ -72,47 +73,54 @@ public class Slaves {
 	}
 
 	public synchronized List<SlaveThread> getFullList() {
-		ArrayList<SlaveThread> clientThreadList = new ArrayList<>();
+		ArrayList<SlaveThread> slaveThreadList = new ArrayList<>();
 		for (int i = 0; i < threads.length(); i++) {
-			SlaveThread ct = threads.get(i);
-			if (ct != null) {
-				clientThreadList.add(ct);
+			SlaveThread st = threads.get(i);
+			if (st != null) {
+				slaveThreadList.add(st);
 			}
 		}
-		Collections.shuffle(clientThreadList);
-		return clientThreadList;
+		Collections.shuffle(slaveThreadList);
+		return slaveThreadList;
 	}
 
 	public synchronized List<SlaveThread> getList(String taskName) {
-		List<SlaveThread> clientThreadList = new ArrayList<>();
-		SlaveThread ct;
-		for (int i = 0; i < threads.length(); i++) {
-			ct = threads.get(i);
-			if (ct != null && ct.getTaskSet() != null && ct.getTaskSet().contains(taskName)) {
-				clientThreadList.add(ct);
-			}
-		}
-		Collections.shuffle(clientThreadList);
-		return clientThreadList;
+		return getList(taskName, -1);
 	}
 
-	public synchronized List<SlaveThread> getListByTaskId(long taskId) {
-		List<SlaveThread> clientThreadList = new ArrayList<>();
-		SlaveThread ct;
+	public synchronized List<SlaveThread> getList(String taskName, int maxThreads) {
+		List<SlaveThread> slaveThreadList = new ArrayList<>();
+		SlaveThread st;
 		for (int i = 0; i < threads.length(); i++) {
-			ct = threads.get(i);
-			if (ct != null && !ct.getRequestMap().isEmpty()) {
-				for (Map.Entry<Long, NodeRequest> requestEntry : ct.getRequestMap().entrySet()) {
-					if (requestEntry.getValue().getTaskId() == taskId) {
-						clientThreadList.add(ct);
+			st = threads.get(i);
+			if (st != null && st.getAvailableTasksSet() != null && st.getAvailableTasksSet().contains(taskName)) {
+				slaveThreadList.add(st);
+			}
+		}
+		Collections.shuffle(slaveThreadList);
+		if (maxThreads != -1 && maxThreads < slaveThreadList.size()) {
+			return slaveThreadList.subList(0, maxThreads);
+		}
+		return slaveThreadList;
+	}
+
+	public synchronized List<SlaveThread> getListByTaskId(UUID taskId) {
+		List<SlaveThread> slaveThreadList = new ArrayList<>();
+		SlaveThread st;
+		for (int i = 0; i < threads.length(); i++) {
+			st = threads.get(i);
+			if (st != null && !st.getRequestMap().isEmpty()) {
+				for (Map.Entry<UUID, NodeRequest> requestEntry : st.getRequestMap().entrySet()) {
+					if (requestEntry.getValue().getTaskId().equals(taskId)) {
+						slaveThreadList.add(st);
 						break;
 					}
 				}
 			}
 
 		}
-		Collections.shuffle(clientThreadList);
-		return clientThreadList;
+		Collections.shuffle(slaveThreadList);
+		return slaveThreadList;
 	}
 
 	public int getClusterSize() {
@@ -121,10 +129,10 @@ public class Slaves {
 
 	public synchronized int getClusterSize(String taskName) {
 		int counter = 0;
-		SlaveThread ct;
+		SlaveThread st;
 		for (int i = 0; i < threads.length(); i++) {
-			ct = threads.get(i);
-			if (ct != null && ct.getTaskSet() != null && ct.getTaskSet().contains(taskName)) {
+			st = threads.get(i);
+			if (st != null && st.getAvailableTasksSet().contains(taskName)) {
 				counter++;
 			}
 		}
@@ -134,8 +142,8 @@ public class Slaves {
 	private synchronized void interruptAll() {
 
 		List<SlaveThread> clientThreadsList = getFullList();
-		for (SlaveThread ct : clientThreadsList) {
-			ct.interrupt();
+		for (SlaveThread st : clientThreadsList) {
+			st.interrupt();
 		}
 	}
 

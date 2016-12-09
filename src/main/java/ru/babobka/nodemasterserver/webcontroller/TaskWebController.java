@@ -2,6 +2,7 @@ package ru.babobka.nodemasterserver.webcontroller;
 
 import java.io.IOException;
 import java.net.URLDecoder;
+import java.util.concurrent.TimeoutException;
 
 import ru.babobka.nodemasterserver.service.TaskService;
 import ru.babobka.nodemasterserver.service.TaskServiceImpl;
@@ -18,7 +19,7 @@ public class TaskWebController extends WebController {
 	private TaskPool taskPool = TaskPool.getInstance();
 
 	@Override
-	public HttpResponse onGet(HttpRequest request) throws IOException {
+	public HttpResponse onGet(HttpRequest request) throws IOException, TimeoutException {
 		String taskName = request.getUri().replaceFirst("/", "");
 		taskName = taskName.substring(taskName.indexOf('/') + 1, taskName.indexOf('?'));
 		TaskContext taskContext = taskPool.get(URLDecoder.decode(taskName, "UTF-8"));

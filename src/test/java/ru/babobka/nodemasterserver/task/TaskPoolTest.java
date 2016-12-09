@@ -15,7 +15,8 @@ import ru.babobka.nodemasterserver.util.StreamUtil;
 public class TaskPoolTest {
 
 	static {
-		MasterServerContext.setConfigPath(StreamUtil.getLocalResourcePath(MasterServer.class, "master_config.json"));
+		MasterServerContext
+		.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
 	}
 	
 	@Test

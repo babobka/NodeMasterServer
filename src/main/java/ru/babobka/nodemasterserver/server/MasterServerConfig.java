@@ -86,9 +86,9 @@ public class MasterServerConfig {
 		if (loggerFolder == null) {
 			throw new ServerConfigurationException("'loggerFolder' must not be null");
 		} else {
-			File loggerFile = new File(loggerFolder);
-			if (!loggerFile.exists()) {
-				loggerFile.mkdirs();
+			File loggerFolderFile = new File(loggerFolder);
+			if (!loggerFolderFile.exists() && !loggerFolderFile.mkdirs()) {
+				throw new ServerConfigurationException("Can not create folder for " + loggerFolderFile);
 			}
 		}
 

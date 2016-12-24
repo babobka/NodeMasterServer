@@ -3,28 +3,11 @@ package ru.babobka.nodemasterserver.dao;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DebugCacheDAOImpl implements CacheDAO {
 
-	private static volatile DebugCacheDAOImpl instance;
+public class DebugCacheDAOImpl implements CacheDAO {
 
 	private final Map<String, String> debugDataMap = new ConcurrentHashMap<>();
 
-	private DebugCacheDAOImpl() {
-
-	}
-
-	public static DebugCacheDAOImpl getInstance() {
-		DebugCacheDAOImpl localInstance = instance;
-		if (localInstance == null) {
-			synchronized (DebugCacheDAOImpl.class) {
-				localInstance = instance;
-				if (localInstance == null) {
-					instance = localInstance = new DebugCacheDAOImpl();
-				}
-			}
-		}
-		return localInstance;
-	}
 
 	@Override
 	public String get(String key) {

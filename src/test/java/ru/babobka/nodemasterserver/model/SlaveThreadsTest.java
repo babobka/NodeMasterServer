@@ -9,20 +9,23 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.server.MasterServer;
-import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContainerStrategy;
 import ru.babobka.nodemasterserver.thread.SlaveThread;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
-import ru.babobka.nodeslaveserver.server.SlaveServerContext;
+import ru.babobka.nodeslaveserver.server.SlaveServerContainerStrategy;
 
 public class SlaveThreadsTest {
 
 	static {
-		MasterServerContext.setConfig(StreamUtil.getLocalResource(
-				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
-		SlaveServerContext.setConfig(StreamUtil.getLocalResource(
-				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
+		new MasterServerContainerStrategy(StreamUtil.getLocalResource(
+				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
+		new SlaveServerContainerStrategy(StreamUtil.getLocalResource(
+				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
 	}
 
 	static final int N = 1000;

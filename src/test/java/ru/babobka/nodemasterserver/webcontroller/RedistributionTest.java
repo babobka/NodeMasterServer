@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.Random;
 
 import org.apache.http.HttpMessage;
 import org.apache.http.client.HttpClient;
@@ -16,24 +17,33 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.server.MasterServer;
-import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerConfig;
+import ru.babobka.nodemasterserver.server.MasterServerContainerStrategy;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
-import ru.babobka.nodeslaveserver.server.SlaveServerContext;
+import ru.babobka.nodeslaveserver.server.SlaveServerContainerStrategy;
 
 public class RedistributionTest {
 
 	static {
-		MasterServerContext
-				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
-		SlaveServerContext
-				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
+		new MasterServerContainerStrategy(StreamUtil.getLocalResource(
+				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
+		new SlaveServerContainerStrategy(StreamUtil.getLocalResource(
+				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
 	}
 
 	private static SlaveServer[] slaveServers;
 
+	
+	
 	private static final int SLAVES = 3;
+	
+	private static final MasterServerConfig config = Container.getInstance()
+			.get(MasterServerConfig.class);
 
 	private static MasterServer masterServer;
 
@@ -41,9 +51,9 @@ public class RedistributionTest {
 
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
-	private static final String REST_LOGIN = MasterServerContext.getConfig().getRestServiceLogin();
+	private static final String REST_LOGIN = config.getRestServiceLogin();
 
-	private static final String REST_PASSWORD = MasterServerContext.getConfig().getRestServicePassword();
+	private static final String REST_PASSWORD = config.getRestServicePassword();
 
 	private static final String LOGIN_HEADER = "X-Login";
 
@@ -51,7 +61,7 @@ public class RedistributionTest {
 
 	private static final HttpClient httpClient = HttpClientBuilder.create().build();
 
-	private static final int PORT = MasterServerContext.getConfig().getWebPort();
+	private static final int PORT = config.getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/task";
 
@@ -59,7 +69,7 @@ public class RedistributionTest {
 
 	@BeforeClass
 	public static void runServers() throws IOException, InterruptedException {
-		masterServer = MasterServer.getInstance();
+		masterServer = new MasterServer();
 		masterServer.start();
 
 	}
@@ -80,6 +90,7 @@ public class RedistributionTest {
 
 	@Test
 	public void testMillionPrimesOneSlaveDie() throws IOException, InterruptedException {
+		Random random = new Random();
 		for (int i = 0; i < 5; i++) {
 			createSlaves();
 			startSlaves();
@@ -89,7 +100,7 @@ public class RedistributionTest {
 				public void run() {
 					try {
 						Thread.sleep(2000);
-						slaveServers[(int) (Math.random() * SLAVES)].interrupt();
+						slaveServers[random.nextInt(SLAVES)].interrupt();
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
@@ -107,7 +118,7 @@ public class RedistributionTest {
 		slaveServers = new SlaveServer[SLAVES];
 		for (int i = 0; i < SLAVES; i++) {
 			slaveServers[i] = new SlaveServer("localhost",
-					MasterServerContext.getConfig().getMainServerPort(), LOGIN, PASSWORD);
+					config.getMainServerPort(), LOGIN, PASSWORD);
 		}
 	}
 

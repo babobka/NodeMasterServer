@@ -9,30 +9,36 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Test;
 
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.model.User;
 import ru.babobka.nodemasterserver.server.MasterServer;
-import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerContainerStrategy;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeserials.RSA;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
-import ru.babobka.nodeslaveserver.server.SlaveServerContext;
+import ru.babobka.nodeslaveserver.server.SlaveServerContainerStrategy;
+
 
 public class NodeUserServiceTest {
 
 	static {
-		MasterServerContext
-				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
-		SlaveServerContext
-				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
+		new MasterServerContainerStrategy(StreamUtil.getLocalResource(
+				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
+		new SlaveServerContainerStrategy(StreamUtil.getLocalResource(
+				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
 	}
 
-	private NodeUsersService userService = NodeUsersServiceImpl.getInstance();
+	private NodeUsersService userService = Container.getInstance()
+			.get(NodeUsersService.class);
 
 	private static final String USER_NAME = "bbk_test";
 
 	private static final String PASSWORD = "123";
 
-	private final User testUser = new User(USER_NAME, PASSWORD, 0, "test@email.com");
+	private final User testUser = new User(USER_NAME, PASSWORD, 0,
+			"test@email.com");
 
 	@After
 	public void tearDown() {
@@ -80,7 +86,8 @@ public class NodeUserServiceTest {
 		userService.add(testUser);
 		JSONObject jsonObject = new JSONObject();
 		jsonObject.put("taskCount", testUser.getTaskCount() + 1);
-		assertTrue(userService.update(testUser.getName(), new User(jsonObject)));
+		assertTrue(
+				userService.update(testUser.getName(), new User(jsonObject)));
 		User user = userService.get(testUser.getName());
 		assertEquals(oldTaskCount + 1, user.getTaskCount().intValue());
 	}
@@ -94,22 +101,27 @@ public class NodeUserServiceTest {
 	@Test
 	public void testAuth() {
 		userService.add(testUser);
-		BigInteger integerHashedPassword = RSA.bytesToHashedBigInteger(testUser.getHashedPassword());
+		BigInteger integerHashedPassword = RSA
+				.bytesToHashedBigInteger(testUser.getHashedPassword());
 		assertTrue(userService.auth(testUser.getName(), integerHashedPassword));
 	}
 
 	@Test
 	public void testBadPasswordAuth() {
 		userService.add(testUser);
-		BigInteger integerHashedPassword = RSA.stringToBigInteger(PASSWORD + "abc");
-		assertFalse(userService.auth(testUser.getName(), integerHashedPassword));
+		BigInteger integerHashedPassword = RSA
+				.stringToBigInteger(PASSWORD + "abc");
+		assertFalse(
+				userService.auth(testUser.getName(), integerHashedPassword));
 	}
 
 	@Test
 	public void testBadLoginAuth() {
 		userService.add(testUser);
-		BigInteger integerHashedPassword = RSA.bytesToHashedBigInteger(testUser.getHashedPassword());
-		assertFalse(userService.auth(testUser.getName() + "abc", integerHashedPassword));
+		BigInteger integerHashedPassword = RSA
+				.bytesToHashedBigInteger(testUser.getHashedPassword());
+		assertFalse(userService.auth(testUser.getName() + "abc",
+				integerHashedPassword));
 	}
 
 }

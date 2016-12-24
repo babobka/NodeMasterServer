@@ -9,6 +9,8 @@ import java.security.MessageDigest;
  */
 public interface MathUtil {
 
+
+	
 	static byte[] sha2(String message) {
 		if (message != null) {
 			try {

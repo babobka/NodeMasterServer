@@ -8,28 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import ru.babobka.nodemasterserver.model.User;
 
-class DebugNodeUsersDAOImpl implements NodeUsersDAO {
+public class DebugNodeUsersDAOImpl implements NodeUsersDAO {
 
-	private static volatile DebugNodeUsersDAOImpl instance;
+
 
 	private final Map<String, User> debugDataMap = new ConcurrentHashMap<>();
-
-	private DebugNodeUsersDAOImpl() {
-
-	}
-
-	public static DebugNodeUsersDAOImpl getInstance() {
-		DebugNodeUsersDAOImpl localInstance = instance;
-		if (localInstance == null) {
-			synchronized (DebugNodeUsersDAOImpl.class) {
-				localInstance = instance;
-				if (localInstance == null) {
-					instance = localInstance = new DebugNodeUsersDAOImpl();
-				}
-			}
-		}
-		return localInstance;
-	}
 
 	@Override
 	public User get(String login) {

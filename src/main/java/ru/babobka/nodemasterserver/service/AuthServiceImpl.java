@@ -6,8 +6,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import ru.babobka.container.Container;
+import ru.babobka.nodemasterserver.logger.SimpleLogger;
 import ru.babobka.nodemasterserver.model.AuthResult;
-import ru.babobka.nodemasterserver.server.MasterServerContext;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeserials.NodeResponse;
 import ru.babobka.nodeserials.RSA;
@@ -17,56 +18,43 @@ import ru.babobka.nodeserials.RSA;
  */
 public class AuthServiceImpl implements AuthService {
 
-	private final NodeUsersService usersService = NodeUsersServiceImpl.getInstance();
+	private final NodeUsersService usersService = Container.getInstance()
+			.get(NodeUsersService.class);
 
-	private static volatile AuthServiceImpl instance;
-
-	private AuthServiceImpl() {
-
-	}
-
-	public static AuthServiceImpl getInstance() {
-		AuthServiceImpl localInstance = instance;
-		if (localInstance == null) {
-			synchronized (AuthServiceImpl.class) {
-				localInstance = instance;
-				if (localInstance == null) {
-					instance = localInstance = new AuthServiceImpl();
-				}
-			}
-		}
-		return localInstance;
-	}
+	private final SimpleLogger logger = Container.getInstance()
+			.get(SimpleLogger.class);
 
 	@Override
 	public AuthResult getAuthResult(RSA rsa, Socket socket) {
 		try {
 			StreamUtil.sendObject(rsa.getPublicKey(), socket);
-			NodeResponse authResponse = (NodeResponse) StreamUtil.receiveObject(socket);
+			NodeResponse authResponse = (NodeResponse) StreamUtil
+					.receiveObject(socket);
 			if (authResponse.isAuthResponse()) {
-				BigInteger integerHashedPassword = rsa.decrypt(authResponse.getAdditionValue("password"));
+				BigInteger integerHashedPassword = rsa
+						.decrypt(authResponse.getAdditionValue("password"));
 				String login = authResponse.getAdditionValue("login");
-				List<String> tasksList = authResponse.getAdditionValue("tasksList");
-				if (tasksList != null) {
-					if (tasksList.isEmpty()) {
-						return new AuthResult(false);
-					}
+				List<String> tasksList = authResponse
+						.getAdditionValue("tasksList");
+				if (tasksList != null && !tasksList.isEmpty()) {
+
 					Set<String> taskSet = new HashSet<>();
-					for (String taskName : tasksList) {
-						taskSet.add(taskName);
-					}
-					boolean authSuccess = usersService.auth(login, integerHashedPassword);
+					taskSet.addAll(tasksList);
+					boolean authSuccess = usersService.auth(login,
+							integerHashedPassword);
 					StreamUtil.sendObject(authSuccess, socket);
 					if (authSuccess) {
 						return new AuthResult(true, login, taskSet);
 					}
+				} else {
+					return new AuthResult(false);
 				}
 				return new AuthResult(false);
 			} else {
 				return new AuthResult(false);
 			}
 		} catch (Exception e) {
-			MasterServerContext.getInstance().getLogger().log(e);
+			logger.log(e);
 			return new AuthResult(false);
 		}
 	}

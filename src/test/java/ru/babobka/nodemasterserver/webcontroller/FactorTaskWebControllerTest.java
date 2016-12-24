@@ -20,18 +20,23 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.server.MasterServer;
-import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerConfig;
+import ru.babobka.nodemasterserver.server.MasterServerContainerStrategy;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
-import ru.babobka.nodeslaveserver.server.SlaveServerContext;
+import ru.babobka.nodeslaveserver.server.SlaveServerContainerStrategy;
 
 public class FactorTaskWebControllerTest {
+
 	static {
-		MasterServerContext
-				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
-		SlaveServerContext
-				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
+		new MasterServerContainerStrategy(StreamUtil.getLocalResource(
+				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
+		new SlaveServerContainerStrategy(StreamUtil.getLocalResource(
+				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
 	}
 
 	private static SlaveServer[] slaveServers;
@@ -44,17 +49,21 @@ public class FactorTaskWebControllerTest {
 
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
-	private static final String REST_LOGIN = MasterServerContext.getConfig().getRestServiceLogin();
+	private static final MasterServerConfig config = Container.getInstance()
+			.get(MasterServerConfig.class);
 
-	private static final String REST_PASSWORD = MasterServerContext.getConfig().getRestServicePassword();
+	private static final String REST_LOGIN = config.getRestServiceLogin();
+
+	private static final String REST_PASSWORD = config.getRestServicePassword();
 
 	private static final String LOGIN_HEADER = "X-Login";
 
 	private static final String PASSWORD_HEADER = "X-Password";
 
-	private static final HttpClient httpClient = HttpClientBuilder.create().build();
+	private static final HttpClient httpClient = HttpClientBuilder.create()
+			.build();
 
-	private static final int PORT = MasterServerContext.getConfig().getWebPort();
+	private static final int PORT = config.getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/task";
 
@@ -62,7 +71,7 @@ public class FactorTaskWebControllerTest {
 
 	@BeforeClass
 	public static void runServers() throws IOException {
-		masterServer = MasterServer.getInstance();
+		masterServer = new MasterServer();
 		masterServer.start();
 		createSlaves();
 		startSlaves();
@@ -89,7 +98,8 @@ public class FactorTaskWebControllerTest {
 			BigInteger number = BigInteger.probablePrime(8, new Random())
 					.multiply(BigInteger.probablePrime(8, new Random()));
 			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+			BigInteger factor = json.getJSONObject("resultMap")
+					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 
 		}
@@ -97,15 +107,21 @@ public class FactorTaskWebControllerTest {
 
 	@Test
 	public void testInvalidTask() {
-		assertEquals(getFactorHttpResponse(BigInteger.valueOf(-10)).getStatusLine().getStatusCode(),
-				ru.babobka.vsjws.model.HttpResponse.ResponseCode.BAD_REQUEST.getCode());
+		assertEquals(
+				getFactorHttpResponse(BigInteger.valueOf(-10)).getStatusLine()
+						.getStatusCode(),
+				ru.babobka.vsjws.model.HttpResponse.ResponseCode.BAD_REQUEST
+						.getCode());
 	}
 
 	@Test
 	public void testMassInvalidTasks() {
 		for (int i = 0; i < 500; i++)
-			assertEquals(getFactorHttpResponse(BigInteger.valueOf(-10)).getStatusLine().getStatusCode(),
-					ru.babobka.vsjws.model.HttpResponse.ResponseCode.BAD_REQUEST.getCode());
+			assertEquals(
+					getFactorHttpResponse(BigInteger.valueOf(-10))
+							.getStatusLine().getStatusCode(),
+					ru.babobka.vsjws.model.HttpResponse.ResponseCode.BAD_REQUEST
+							.getCode());
 	}
 
 	@Test
@@ -114,7 +130,8 @@ public class FactorTaskWebControllerTest {
 			BigInteger number = BigInteger.probablePrime(16, new Random())
 					.multiply(BigInteger.probablePrime(16, new Random()));
 			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+			BigInteger factor = json.getJSONObject("resultMap")
+					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 		}
 	}
@@ -125,25 +142,29 @@ public class FactorTaskWebControllerTest {
 			BigInteger number = BigInteger.probablePrime(32, new Random())
 					.multiply(BigInteger.probablePrime(32, new Random()));
 			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+			BigInteger factor = json.getJSONObject("resultMap")
+					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 		}
 	}
 
 	@Test
 	public void testRandomNumbers() {
+		Random random = new Random();
 		for (int i = 0; i < 50; i++) {
-			int bits = (int) (Math.random() * 40) + 2;
+			int bits = random.nextInt(40) + 2;
 			BigInteger number = BigInteger.probablePrime(bits, new Random())
 					.multiply(BigInteger.probablePrime(bits, new Random()));
 			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+			BigInteger factor = json.getJSONObject("resultMap")
+					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 		}
 	}
 
 	@Test
 	public void testRandomNumbersParallel() throws InterruptedException {
+		Random random = new Random();
 		Thread[] threads = new Thread[10];
 		final AtomicInteger failedTests = new AtomicInteger(0);
 		for (int i = 0; i < threads.length; i++) {
@@ -152,11 +173,14 @@ public class FactorTaskWebControllerTest {
 				@Override
 				public void run() {
 					for (int i = 0; i < 5; i++) {
-						int bits = (int) (Math.random() * 40) + 2;
-						BigInteger number = BigInteger.probablePrime(bits, new Random())
-								.multiply(BigInteger.probablePrime(bits, new Random()));
+						int bits = random.nextInt(40) + 2;
+						BigInteger number = BigInteger
+								.probablePrime(bits, new Random())
+								.multiply(BigInteger.probablePrime(bits,
+										new Random()));
 						JSONObject json = getFactorJson(number);
-						BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+						BigInteger factor = json.getJSONObject("resultMap")
+								.getBigInteger("factor");
 						if (!number.mod(factor).equals(BigInteger.ZERO)) {
 							failedTests.incrementAndGet();
 							break;
@@ -186,7 +210,8 @@ public class FactorTaskWebControllerTest {
 			BigInteger number = BigInteger.probablePrime(40, new Random())
 					.multiply(BigInteger.probablePrime(40, new Random()));
 			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+			BigInteger factor = json.getJSONObject("resultMap")
+					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 		}
 	}
@@ -197,7 +222,8 @@ public class FactorTaskWebControllerTest {
 			BigInteger number = BigInteger.probablePrime(48, new Random())
 					.multiply(BigInteger.probablePrime(48, new Random()));
 			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap").getBigInteger("factor");
+			BigInteger factor = json.getJSONObject("resultMap")
+					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 		}
 	}
@@ -206,7 +232,7 @@ public class FactorTaskWebControllerTest {
 		slaveServers = new SlaveServer[SLAVES];
 		for (int i = 0; i < SLAVES; i++) {
 			slaveServers[i] = new SlaveServer("localhost",
-					MasterServerContext.getConfig().getMainServerPort(), LOGIN, PASSWORD);
+					config.getMainServerPort(), LOGIN, PASSWORD);
 		}
 	}
 
@@ -234,8 +260,9 @@ public class FactorTaskWebControllerTest {
 	private HttpResponse getFactorHttpResponse(BigInteger number) {
 		HttpGet get = null;
 		try {
-			String url = URL + "/" + URLEncoder.encode(FACTOR_TASK_NAME, "UTF-8") + "?number=" + number
-					+ "&noCache=true";
+			String url = URL + "/"
+					+ URLEncoder.encode(FACTOR_TASK_NAME, "UTF-8") + "?number="
+					+ number + "&noCache=true";
 			get = new HttpGet(url);
 			setCredentialHeaders(get);
 			return httpClient.execute(get);
@@ -253,11 +280,13 @@ public class FactorTaskWebControllerTest {
 
 		HttpGet get = null;
 		try {
-			String url = URL + "/" + URLEncoder.encode(FACTOR_TASK_NAME, "UTF-8") + "?number=" + number
-					+ "&noCache=true";
+			String url = URL + "/"
+					+ URLEncoder.encode(FACTOR_TASK_NAME, "UTF-8") + "?number="
+					+ number + "&noCache=true";
 			get = new HttpGet(url);
 			setCredentialHeaders(get);
-			return new JSONObject(new BasicResponseHandler().handleResponse(httpClient.execute(get)));
+			return new JSONObject(new BasicResponseHandler()
+					.handleResponse(httpClient.execute(get)));
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);

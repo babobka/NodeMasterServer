@@ -1,12 +1,14 @@
 package ru.babobka.nodemasterserver.classloader;
 
+import java.io.IOException;
+
 /**
  * Created by dolgopolov.a on 12.12.15.
  */
 public class JarClassLoader extends MultiClassLoader {
 	private JarResource jarResources;
 
-	public JarClassLoader(String jarName) {
+	public JarClassLoader(String jarName) throws IOException {
 		// Create the JarResource and suck in the jar file.
 		jarResources = new JarResource(jarName);
 	}

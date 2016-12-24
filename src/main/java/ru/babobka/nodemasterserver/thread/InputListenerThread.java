@@ -5,7 +5,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
 
-import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.container.Container;
+import ru.babobka.nodemasterserver.logger.SimpleLogger;
+import ru.babobka.nodemasterserver.model.Slaves;
 
 /**
  * Created by dolgopolov.a on 27.07.15.
@@ -14,6 +16,11 @@ public class InputListenerThread extends Thread {
 
 	private final ServerSocket ss;
 
+	private final SimpleLogger logger = Container.getInstance()
+			.get(SimpleLogger.class);
+
+	private final Slaves slaves = Container.getInstance().get(Slaves.class);
+
 	public InputListenerThread(int port) throws IOException {
 		ss = new ServerSocket(port);
 	}
@@ -21,19 +28,20 @@ public class InputListenerThread extends Thread {
 	@Override
 	public void run() {
 		try {
-			MasterServerContext.getInstance().getLogger().log("Start InputListenerThread");
+			logger.log("Start InputListenerThread");
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					Socket socket = ss.accept();
-					if (MasterServerContext.getInstance().getSlaves().isFittable()) {
+					if (slaves.isFittable()) {
 						new SlaveThread(socket).start();
 					} else {
-						MasterServerContext.getInstance().getLogger().log(Level.WARNING, "Can not fit new slave");
+						logger.log(Level.WARNING, "Can not fit new slave");
 						socket.close();
 					}
 				} catch (Exception e) {
-					if (!ss.isClosed() || !Thread.currentThread().isInterrupted()) {
-						MasterServerContext.getInstance().getLogger().log(e);
+					if (!ss.isClosed()
+							|| !Thread.currentThread().isInterrupted()) {
+						logger.log(e);
 					}
 
 				}
@@ -44,11 +52,11 @@ public class InputListenerThread extends Thread {
 			try {
 				ss.close();
 			} catch (IOException e) {
-				MasterServerContext.getInstance().getLogger().log(e);
+				logger.log(e);
 			}
 
 		}
-		MasterServerContext.getInstance().getLogger().log("InputListenerThread is done");
+		logger.log("InputListenerThread is done");
 	}
 
 	@Override
@@ -57,7 +65,7 @@ public class InputListenerThread extends Thread {
 		try {
 			ss.close();
 		} catch (IOException e) {
-			MasterServerContext.getInstance().getLogger().log(e);
+			logger.log(e);
 		}
 
 	}

@@ -3,10 +3,10 @@ package ru.babobka.nodemasterserver.webcontroller;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.exception.InvalidUserException;
 import ru.babobka.nodemasterserver.model.User;
 import ru.babobka.nodemasterserver.service.NodeUsersService;
-import ru.babobka.nodemasterserver.service.NodeUsersServiceImpl;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
@@ -14,7 +14,8 @@ import ru.babobka.vsjws.runnable.WebController;
 
 public class NodeUsersCRUDWebController extends WebController {
 
-	private final NodeUsersService nodeUsersService = NodeUsersServiceImpl.getInstance();
+	private final NodeUsersService nodeUsersService = Container.getInstance()
+			.get(NodeUsersService.class);
 
 	@Override
 	public HttpResponse onGet(HttpRequest request) throws JSONException {
@@ -38,12 +39,14 @@ public class NodeUsersCRUDWebController extends WebController {
 
 		String userName = request.getUrlParam("userName");
 		if (userName == null) {
-			return HttpResponse.textResponse("Parameter 'userName' was not set", ResponseCode.BAD_REQUEST);
+			return HttpResponse.textResponse("Parameter 'userName' was not set",
+					ResponseCode.BAD_REQUEST);
 		} else {
 			if (nodeUsersService.remove(userName)) {
 				return HttpResponse.ok();
 			} else {
-				return HttpResponse.textResponse(ResponseCode.BAD_REQUEST, ResponseCode.BAD_REQUEST);
+				return HttpResponse.textResponse(ResponseCode.BAD_REQUEST,
+						ResponseCode.BAD_REQUEST);
 			}
 		}
 
@@ -57,7 +60,9 @@ public class NodeUsersCRUDWebController extends WebController {
 			if (nodeUsersService.add(user)) {
 				return HttpResponse.ok();
 			} else {
-				return HttpResponse.textResponse(ResponseCode.BAD_REQUEST.toString(), ResponseCode.BAD_REQUEST);
+				return HttpResponse.textResponse(
+						ResponseCode.BAD_REQUEST.toString(),
+						ResponseCode.BAD_REQUEST);
 			}
 		} catch (InvalidUserException e) {
 			return HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
@@ -74,7 +79,8 @@ public class NodeUsersCRUDWebController extends WebController {
 			if (nodeUsersService.update(userName, user)) {
 				return HttpResponse.ok();
 			} else {
-				return HttpResponse.textResponse(ResponseCode.INTERNAL_SERVER_ERROR.toString(),
+				return HttpResponse.textResponse(
+						ResponseCode.INTERNAL_SERVER_ERROR.toString(),
 						ResponseCode.INTERNAL_SERVER_ERROR);
 			}
 		} catch (InvalidUserException e) {

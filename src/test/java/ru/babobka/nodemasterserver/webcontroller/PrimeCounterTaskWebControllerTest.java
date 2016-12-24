@@ -17,19 +17,23 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import ru.babobka.nodemasterserver.builder.TestUserBuilder;
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.server.MasterServer;
-import ru.babobka.nodemasterserver.server.MasterServerContext;
+import ru.babobka.nodemasterserver.server.MasterServerConfig;
+import ru.babobka.nodemasterserver.server.MasterServerContainerStrategy;
 import ru.babobka.nodemasterserver.util.StreamUtil;
 import ru.babobka.nodeslaveserver.server.SlaveServer;
-import ru.babobka.nodeslaveserver.server.SlaveServerContext;
+import ru.babobka.nodeslaveserver.server.SlaveServerContainerStrategy;
 
 public class PrimeCounterTaskWebControllerTest {
 
 	static {
-		MasterServerContext
-				.setConfig(StreamUtil.getLocalResource(MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG));
-		SlaveServerContext
-				.setConfig(StreamUtil.getLocalResource(SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG));
+		new MasterServerContainerStrategy(StreamUtil.getLocalResource(
+				MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
+		new SlaveServerContainerStrategy(StreamUtil.getLocalResource(
+				SlaveServer.class, SlaveServer.SLAVE_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
 	}
 
 	private static SlaveServer[] slaveServers;
@@ -42,17 +46,21 @@ public class PrimeCounterTaskWebControllerTest {
 
 	private static final String PASSWORD = TestUserBuilder.PASSWORD;
 
-	private static final String REST_LOGIN = MasterServerContext.getConfig().getRestServiceLogin();
+	private static final MasterServerConfig config = Container.getInstance()
+			.get(MasterServerConfig.class);
 
-	private static final String REST_PASSWORD = MasterServerContext.getConfig().getRestServicePassword();
+	private static final String REST_LOGIN = config.getRestServiceLogin();
+
+	private static final String REST_PASSWORD = config.getRestServicePassword();
 
 	private static final String LOGIN_HEADER = "X-Login";
 
 	private static final String PASSWORD_HEADER = "X-Password";
 
-	private static final HttpClient httpClient = HttpClientBuilder.create().build();
+	private static final HttpClient httpClient = HttpClientBuilder.create()
+			.build();
 
-	private static final int PORT = MasterServerContext.getConfig().getWebPort();
+	private static final int PORT = config.getWebPort();
 
 	private static final String URL = "http://localhost:" + PORT + "/task";
 
@@ -60,7 +68,7 @@ public class PrimeCounterTaskWebControllerTest {
 
 	@BeforeClass
 	public static void runServers() throws IOException, InterruptedException {
-		masterServer = MasterServer.getInstance();
+		masterServer = new MasterServer();
 		masterServer.start();
 		createSlaves();
 		startSlaves();
@@ -86,28 +94,33 @@ public class PrimeCounterTaskWebControllerTest {
 
 		for (int i = 0; i < 5000; i++) {
 			JSONObject jsonObject = getPrimesInRangeJson(0, 29);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 10);
+			assertEquals(
+					jsonObject.getJSONObject("resultMap").getInt("primeCount"),
+					10);
 		}
 	}
 
 	@Test
 	public void testInvalidTask() {
 
-		assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000).getStatusLine().getStatusCode(), 400);
+		assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000)
+				.getStatusLine().getStatusCode(), 400);
 
 	}
 
 	@Test
 	public void testMassInvalidTasks() {
 		for (int i = 0; i < 500; i++)
-			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000).getStatusLine().getStatusCode(), 400);
+			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 500_000)
+					.getStatusLine().getStatusCode(), 400);
 
 	}
 
 	@Test
 	public void testMassDummyTasks() {
 		for (int i = 0; i < 500; i++)
-			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 1_000_001).getStatusLine().getStatusCode(), 200);
+			assertEquals(getPrimesInRangeHttpResponse(1_000_000, 1_000_001)
+					.getStatusLine().getStatusCode(), 200);
 
 	}
 
@@ -116,17 +129,20 @@ public class PrimeCounterTaskWebControllerTest {
 
 		for (int i = 0; i < 500; i++) {
 			JSONObject jsonObject = getPrimesInRangeJson(0, 7919);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 1000);
+			assertEquals(
+					jsonObject.getJSONObject("resultMap").getInt("primeCount"),
+					1000);
 		}
 	}
-
 
 	@Test
 	public void testTenThousandsPrimes() {
 
 		for (int i = 0; i < 50; i++) {
 			JSONObject jsonObject = getPrimesInRangeJson(0, 104729);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 10000);
+			assertEquals(
+					jsonObject.getJSONObject("resultMap").getInt("primeCount"),
+					10000);
 		}
 	}
 
@@ -135,7 +151,9 @@ public class PrimeCounterTaskWebControllerTest {
 
 		for (int i = 0; i < 10; i++) {
 			JSONObject jsonObject = getPrimesInRangeJson(0, 15_485_863);
-			assertEquals(jsonObject.getJSONObject("resultMap").getInt("primeCount"), 1_000_000);
+			assertEquals(
+					jsonObject.getJSONObject("resultMap").getInt("primeCount"),
+					1_000_000);
 		}
 	}
 
@@ -143,7 +161,8 @@ public class PrimeCounterTaskWebControllerTest {
 		slaveServers = new SlaveServer[SLAVES];
 		for (int i = 0; i < SLAVES; i++) {
 			slaveServers[i] = new SlaveServer("localhost",
-					MasterServerContext.getConfig().getMainServerPort(), LOGIN, PASSWORD);
+					config.getMainServerPort(), LOGIN,
+					PASSWORD);
 		}
 	}
 
@@ -163,8 +182,9 @@ public class PrimeCounterTaskWebControllerTest {
 	private HttpResponse getPrimesInRangeHttpResponse(int begin, int end) {
 		HttpGet get = null;
 		try {
-			String url = URL + "/" + URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8") + "?begin=" + begin
-					+ "&end=" + end + "&noCache=true";
+			String url = URL + "/"
+					+ URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8")
+					+ "?begin=" + begin + "&end=" + end + "&noCache=true";
 			get = new HttpGet(url);
 			setCredentialHeaders(get);
 			return httpClient.execute(get);
@@ -182,11 +202,13 @@ public class PrimeCounterTaskWebControllerTest {
 
 		HttpGet get = null;
 		try {
-			String url = URL + "/" + URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8") + "?begin=" + begin
-					+ "&end=" + end + "&noCache=true";
+			String url = URL + "/"
+					+ URLEncoder.encode(DUMMY_PRIME_COUNTER_TASK_NAME, "UTF-8")
+					+ "?begin=" + begin + "&end=" + end + "&noCache=true";
 			get = new HttpGet(url);
 			setCredentialHeaders(get);
-			return new JSONObject(new BasicResponseHandler().handleResponse(httpClient.execute(get)));
+			return new JSONObject(new BasicResponseHandler()
+					.handleResponse(httpClient.execute(get)));
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);

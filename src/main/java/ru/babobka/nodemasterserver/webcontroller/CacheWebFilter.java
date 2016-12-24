@@ -1,7 +1,7 @@
 package ru.babobka.nodemasterserver.webcontroller;
 
+import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.service.CacheService;
-import ru.babobka.nodemasterserver.service.CacheServiceImpl;
 import ru.babobka.vsjws.constant.ContentType;
 import ru.babobka.vsjws.constant.Method;
 import ru.babobka.vsjws.model.HttpRequest;
@@ -11,7 +11,8 @@ import ru.babobka.vsjws.webcontroller.WebFilter;
 
 public class CacheWebFilter implements WebFilter {
 
-	private CacheService cacheService = CacheServiceImpl.getInstance();
+	private CacheService cacheService = Container.getInstance()
+			.get(CacheService.class);
 
 	@Override
 	public void afterFilter(HttpRequest request, HttpResponse response) {
@@ -29,7 +30,8 @@ public class CacheWebFilter implements WebFilter {
 		} else if (request.getMethod().equals(Method.GET)) {
 			String cachedContent = cacheService.getContent(request);
 			if (cachedContent != null) {
-				return HttpResponse.textResponse(cachedContent, ContentType.JSON);
+				return HttpResponse.textResponse(cachedContent,
+						ContentType.JSON);
 			}
 		}
 		return null;

@@ -12,7 +12,7 @@ import ru.babobka.nodemasterserver.util.MathUtil;
  */
 public final class User {
 
-	public static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+	private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
 			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
 	private String name;
@@ -22,6 +22,8 @@ public final class User {
 	private int taskCount;
 
 	private String email;
+	
+	//TODO add salt
 
 	public User() {
 	}
@@ -52,6 +54,7 @@ public final class User {
 			throw new InvalidUserException("'taskCount' is negative");
 		}
 		this.taskCount = taskCount;
+		
 	}
 
 	public User(String name, String password, Integer taskCount, String email) {

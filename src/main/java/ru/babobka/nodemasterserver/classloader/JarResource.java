@@ -33,8 +33,9 @@ final class JarResource {
 	 * 
 	 * @param jarFileName
 	 *            a jar or zip file
+	 * @throws IOException 
 	 */
-	public JarResource(String jarFileName) {
+	public JarResource(String jarFileName) throws IOException {
 		this.jarFileName = jarFileName;
 		init();
 	}
@@ -51,15 +52,16 @@ final class JarResource {
 
 	/**
 	 * initializes internal hash tables with Jar file resources.
+	 * 
+	 * @throws IOException
 	 */
-	private void init() {
-		ZipInputStream zis = null;
-		FileInputStream fis = null;
-		BufferedInputStream bis = null;
-		ZipFile zf = null;
-		try {
+	private void init() throws IOException {
+		try (ZipFile zf = new ZipFile(jarFileName);
+				FileInputStream fis = new FileInputStream(jarFileName);
+
+				BufferedInputStream bis = new BufferedInputStream(fis);
+				ZipInputStream zis = new ZipInputStream(bis)) {
 			// extracts just sizes only.
-			zf = new ZipFile(jarFileName);
 			Enumeration<?> e = zf.entries();
 			while (e.hasMoreElements()) {
 				ZipEntry ze = (ZipEntry) e.nextElement();
@@ -67,10 +69,6 @@ final class JarResource {
 				htSizes.put(ze.getName(), (int) ze.getSize());
 			}
 
-			// extract resources and put them into the hashtable.
-			fis = new FileInputStream(jarFileName);
-			bis = new BufferedInputStream(fis);
-			zis = new ZipInputStream(bis);
 			ZipEntry ze = null;
 			while ((ze = zis.getNextEntry()) != null) {
 				if (ze.isDirectory()) {
@@ -98,39 +96,6 @@ final class JarResource {
 				htJarContents.put(ze.getName(), b);
 
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if (zf != null) {
-				try {
-					zf.close();
-				} catch (IOException e) {
-
-					e.printStackTrace();
-				}
-			}
-			if (zis != null) {
-				try {
-					zis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			if (bis != null) {
-				try {
-					bis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			if (fis != null) {
-				try {
-					fis.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-
 		}
 	}
 

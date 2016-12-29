@@ -1,6 +1,7 @@
 package ru.babobka.nodemasterserver.server;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.concurrent.TimeoutException;
@@ -116,6 +117,7 @@ public final class MasterServer extends Thread {
 			heartBeatingThread.start();
 			webServer.start();
 		} catch (Exception e) {
+			logger.log(e);
 			clear();
 		}
 
@@ -153,7 +155,14 @@ public final class MasterServer extends Thread {
 
 	public static void main(String[] args)
 			throws IOException, ContainerStrategyException {
-
+		new MasterServerContainerStrategy(
+				new FileInputStream(MASTER_SERVER_TEST_CONFIG))
+						.contain(Container.getInstance());
+		/*
+		 * new MasterServerContainerStrategy(StreamUtil.getLocalResource(
+		 * MasterServer.class, MasterServer.MASTER_SERVER_TEST_CONFIG))
+		 * .contain(Container.getInstance());
+		 */
 		MasterServer server = new MasterServer();
 		server.start();
 

@@ -26,8 +26,7 @@ import ru.babobka.subtask.model.SubTask;
 
 public class TaskServiceImpl implements TaskService {
 
-	private static TaskPool taskPool = Container.getInstance()
-			.get(TaskPool.class);
+	private TaskPool taskPool = Container.getInstance().get(TaskPool.class);
 
 	private static final String WRONG_ARGUMENTS = "Wrong arguments";
 
@@ -43,7 +42,7 @@ public class TaskServiceImpl implements TaskService {
 			.getInstance().get(DistributionService.class);
 
 	private void startTask(TaskContext taskContext, UUID taskId,
-			Map<String, String> arguments)
+			Map<String, String> arguments, int maxNodes)
 			throws EmptyClusterException, DistributionException {
 		int currentClusterSize;
 		String taskName = taskContext.getConfig().getName();
@@ -51,6 +50,10 @@ public class TaskServiceImpl implements TaskService {
 			currentClusterSize = 1;
 		} else {
 			currentClusterSize = slaves.getClusterSize(taskName);
+			if (maxNodes > 0 && currentClusterSize > 0
+					&& maxNodes <= currentClusterSize) {
+				currentClusterSize = maxNodes;
+			}
 		}
 		responseStorage.put(taskId,
 				new ResponsesArray(currentClusterSize, taskContext, arguments));
@@ -58,6 +61,7 @@ public class TaskServiceImpl implements TaskService {
 			NodeRequest[] requests = taskContext.getTask().getDistributor()
 					.distribute(arguments, currentClusterSize, taskId);
 			distributionService.broadcastRequests(taskName, requests);
+
 		} else {
 			throw new EmptyClusterException();
 		}
@@ -77,14 +81,14 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	private TaskStartResult startTask(Map<String, String> requestArguments,
-			TaskContext taskContext, UUID taskId) {
+			TaskContext taskContext, UUID taskId, int maxNodes) {
 
 		RequestDistributor requestDistributor = taskContext.getTask()
 				.getDistributor();
 		if (requestDistributor.isValidArguments(requestArguments)) {
 			logger.log("Task id is " + taskId);
 			try {
-				startTask(taskContext, taskId, requestArguments);
+				startTask(taskContext, taskId, requestArguments, maxNodes);
 				return new TaskStartResult(taskId);
 			} catch (DistributionException e) {
 				logger.log(Level.SEVERE, e);
@@ -134,35 +138,6 @@ public class TaskServiceImpl implements TaskService {
 	}
 
 	@Override
-	public TaskResult getResult(Map<String, String> requestArguments,
-			TaskContext taskContext) throws TimeoutException {
-
-		Map<String, Serializable> resultMap;
-
-		UUID taskId = UUID.randomUUID();
-		try {
-			TaskStartResult startResult = startTask(requestArguments,
-					taskContext, taskId);
-			if (!startResult.isFailed()) {
-				Timer timer = new Timer();
-				resultMap = getTaskResult(startResult.getTaskId());
-				if (resultMap != null) {
-					return new TaskResult(timer.getTimePassed(), resultMap);
-				} else {
-					throw new IllegalStateException("Can not find result");
-				}
-			} else if (startResult.isSystemError()) {
-				throw new IllegalStateException("System error");
-			} else {
-				throw new IllegalArgumentException(startResult.getMessage());
-			}
-		} finally {
-			responseStorage.clear(taskId);
-		}
-
-	}
-
-	@Override
 	public TaskResult cancelTask(UUID taskId) {
 		try {
 			List<SlaveThread> clientThreads = slaves.getListByTaskId(taskId);
@@ -185,6 +160,33 @@ public class TaskServiceImpl implements TaskService {
 			logger.log(Level.SEVERE, e);
 			throw new IllegalStateException(
 					"Can not cancel task due to empty cluster", e);
+		}
+	}
+
+	@Override
+	public TaskResult getResult(Map<String, String> requestArguments,
+			TaskContext taskContext, int maxNodes) throws TimeoutException {
+		Map<String, Serializable> resultMap;
+
+		UUID taskId = UUID.randomUUID();
+		try {
+			TaskStartResult startResult = startTask(requestArguments,
+					taskContext, taskId, maxNodes);
+			if (!startResult.isFailed()) {
+				Timer timer = new Timer();
+				resultMap = getTaskResult(startResult.getTaskId());
+				if (resultMap != null) {
+					return new TaskResult(timer.getTimePassed(), resultMap);
+				} else {
+					throw new IllegalStateException("Can not find result");
+				}
+			} else if (startResult.isSystemError()) {
+				throw new IllegalStateException("System error");
+			} else {
+				throw new IllegalArgumentException(startResult.getMessage());
+			}
+		} finally {
+			responseStorage.clear(taskId);
 		}
 	}
 

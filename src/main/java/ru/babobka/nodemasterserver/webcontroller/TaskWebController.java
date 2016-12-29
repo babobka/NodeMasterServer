@@ -8,6 +8,7 @@ import ru.babobka.container.Container;
 import ru.babobka.nodemasterserver.service.TaskService;
 import ru.babobka.nodemasterserver.task.TaskContext;
 import ru.babobka.nodemasterserver.task.TaskPool;
+import ru.babobka.nodemasterserver.util.TextUtil;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.runnable.WebController;
@@ -27,8 +28,9 @@ public class TaskWebController extends WebController {
 				taskName.indexOf('?'));
 		TaskContext taskContext = taskPool
 				.get(URLDecoder.decode(taskName, "UTF-8"));
-		return HttpResponse.jsonResponse(
-				taskService.getResult(request.getUrlParams(), taskContext));
+		int maxNodes = TextUtil.tryParseInt("maxNodes", -1);
+		return HttpResponse.jsonResponse(taskService
+				.getResult(request.getUrlParams(), taskContext, maxNodes));
 	}
 
 	@Override

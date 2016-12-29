@@ -67,7 +67,7 @@ public class ServerTest {
 		}
 	}
 
-	// @Test
+	@Test
 	public void logInTooMuch() throws IOException {
 
 		createSlaves(config.getMaxSlaves() + 1);
@@ -77,7 +77,7 @@ public class ServerTest {
 
 	}
 
-	// @Test
+	@Test
 	public void logOutMass() throws IOException, InterruptedException {
 		for (int i = 0; i < TESTS; i++) {
 			createSlaves(SLAVES);
@@ -88,7 +88,7 @@ public class ServerTest {
 		}
 	}
 
-	// @Test
+	@Test
 	public void logFailBadAddress() {
 
 		try {
@@ -101,7 +101,7 @@ public class ServerTest {
 
 	}
 
-	// @Test
+	@Test
 	public void logFailBadPassword() {
 		try {
 			new SlaveServer("localhost", config.getMainServerPort(),

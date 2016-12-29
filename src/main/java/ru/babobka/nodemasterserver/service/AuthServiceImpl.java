@@ -28,8 +28,7 @@ public class AuthServiceImpl implements AuthService {
 	public AuthResult getAuthResult(RSA rsa, Socket socket) {
 		try {
 			StreamUtil.sendObject(rsa.getPublicKey(), socket);
-			NodeResponse authResponse = (NodeResponse) StreamUtil
-					.receiveObject(socket);
+			NodeResponse authResponse = StreamUtil.receiveObject(socket);
 			if (authResponse.isAuthResponse()) {
 				BigInteger integerHashedPassword = rsa
 						.decrypt(authResponse.getAdditionValue("password"));

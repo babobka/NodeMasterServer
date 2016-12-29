@@ -183,8 +183,7 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 				while (!Thread.currentThread().isInterrupted()) {
 					socket.setSoTimeout(
 							masterServerConfig.getRequestTimeOutMillis());
-					NodeResponse response = (NodeResponse) StreamUtil
-							.receiveObject(socket);
+					NodeResponse response = StreamUtil.receiveObject(socket);
 					if (!response.isHeartBeatingResponse()) {
 						logger.log("Got response " + response);
 						requestMap.remove(response.getResponseId());
@@ -236,7 +235,8 @@ public class SlaveThread extends Thread implements Comparable<SlaveThread> {
 					logger.log(e);
 				}
 			}
-			logger.log("User " + login + " was disconnected");
+			if (login != null)
+				logger.log("User " + login + " was disconnected");
 
 		}
 	}

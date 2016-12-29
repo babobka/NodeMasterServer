@@ -23,7 +23,6 @@ import org.json.JSONObject;
 
 import ru.babobka.nodemasterserver.classloader.JarClassLoader;
 
-
 import ru.babobka.subtask.model.SubTask;
 
 /**
@@ -36,17 +35,20 @@ public final class StreamUtil {
 
 	}
 
-	public static String getLocalResourcePath(Class<?> clazz, String resourceName) {
+	public static String getLocalResourcePath(Class<?> clazz,
+			String resourceName) {
 		return clazz.getClassLoader().getResource(resourceName).getPath();
 	}
-	
-	public static InputStream getLocalResource(Class<?> clazz, String resourceName) {
+
+	public static InputStream getLocalResource(Class<?> clazz,
+			String resourceName) {
 		return clazz.getClassLoader().getResourceAsStream(resourceName);
 	}
 
 	public static String readFile(InputStream is) {
 
-		try (Scanner scanner = new Scanner(is); Scanner delimitedScanner = scanner.useDelimiter("\\A");) {
+		try (Scanner scanner = new Scanner(is);
+				Scanner delimitedScanner = scanner.useDelimiter("\\A");) {
 			return scanner.hasNext() ? scanner.next() : "";
 		}
 	}
@@ -74,7 +76,8 @@ public final class StreamUtil {
 		LinkedList<String> files = new LinkedList<>();
 		if (listOfFiles != null) {
 			for (int i = 0; i < listOfFiles.length; i++) {
-				if (listOfFiles[i].isFile() && listOfFiles[i].getAbsolutePath().endsWith(".jar")) {
+				if (listOfFiles[i].isFile()
+						&& listOfFiles[i].getAbsolutePath().endsWith(".jar")) {
 					files.add(listOfFiles[i].getName());
 				}
 			}
@@ -83,57 +86,64 @@ public final class StreamUtil {
 	}
 
 	public static String getRunningFolder() throws URISyntaxException {
-		String folder = new File(StreamUtil.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath())
-				.toString();
+		String folder = new File(StreamUtil.class.getProtectionDomain()
+				.getCodeSource().getLocation().toURI().getPath()).toString();
 		if (folder.endsWith(".jar")) {
 			folder = folder.substring(0, folder.lastIndexOf(File.separator));
 		}
 		return folder;
 	}
 
-	public static JSONObject getConfigJson(String jarFilePath) throws IOException {
+	public static JSONObject getConfigJson(String jarFilePath)
+			throws IOException {
 		return new JSONObject(readTextFileFromJar(jarFilePath, "task.json"));
 	}
 
-	public static String readTextFileFromJar(String jarFilePath, String fileName) throws IOException {
+	public static String readTextFileFromJar(String jarFilePath,
+			String fileName) throws IOException {
 		URL url = new URL("jar:file:" + jarFilePath + "!/" + fileName);
 		InputStream is = url.openStream();
 		return readFile(is);
 	}
 
-	public static SubTask getTaskClassFromJar(String jarFilePath, String className) throws IOException {
+	public static SubTask getTaskClassFromJar(String jarFilePath,
+			String className) throws IOException {
 		try {
 			JarClassLoader jarLoader = new JarClassLoader(jarFilePath);
-			return (SubTask) (jarLoader.loadClass(className, true).newInstance());
+			return (SubTask) (jarLoader.loadClass(className, true)
+					.newInstance());
 		} catch (Exception e) {
 			throw new IOException("Can not get " + className, e);
 		}
 	}
 
-	public static void sendObject(Object object, Socket socket) throws IOException {
-		synchronized (socket) {
-			byte[] message = objectToByteArray(object);
-			DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
-			dOut.writeInt(message.length); // write length of the message
-			dOut.write(message);
-			socket.getOutputStream().flush();
-		}
+	public static void sendObject(Object object, Socket socket)
+			throws IOException {
+
+		byte[] message = objectToByteArray(object);
+		DataOutputStream dOut = new DataOutputStream(socket.getOutputStream());
+		dOut.writeInt(message.length); // write length of the message
+		dOut.write(message);
+		socket.getOutputStream().flush();
+
 	}
 
-	public static Object receiveObject(Socket socket) throws IOException {
+	@SuppressWarnings("unchecked")
+	public static <T> T receiveObject(Socket socket) throws IOException {
 
 		DataInputStream dIn = new DataInputStream(socket.getInputStream());
 		int length = dIn.readInt();
 		if (length > 0) {
 			byte[] message = new byte[length];
 			dIn.readFully(message, 0, message.length);
-			return byteArrayToObject(message);
+			return (T) byteArrayToObject(message);
 		}
 		return null;
 
 	}
 
-	private static Object byteArrayToObject(byte[] byteArray) throws IOException {
+	private static Object byteArrayToObject(byte[] byteArray)
+			throws IOException {
 		try (ByteArrayInputStream bis = new ByteArrayInputStream(byteArray);
 				ObjectInput in = new ObjectInputStream(bis);) {
 			return in.readObject();
@@ -144,7 +154,8 @@ public final class StreamUtil {
 
 	private static byte[] objectToByteArray(Object object) throws IOException {
 
-		try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos);) {
+		try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				ObjectOutput out = new ObjectOutputStream(bos);) {
 			out.writeObject(object);
 			return bos.toByteArray();
 		}

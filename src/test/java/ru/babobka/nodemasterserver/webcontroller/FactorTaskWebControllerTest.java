@@ -92,17 +92,22 @@ public class FactorTaskWebControllerTest {
 
 	}
 
-	@Test
-	public void testLittleNumberFactor() {
-		for (int i = 0; i < 100; i++) {
-			BigInteger number = BigInteger.probablePrime(8, new Random())
-					.multiply(BigInteger.probablePrime(8, new Random()));
+	private void generateTest(int test, int factorBits) {
+		for (int i = 0; i < test; i++) {
+			BigInteger number = BigInteger
+					.probablePrime(factorBits, new Random()).multiply(
+							BigInteger.probablePrime(factorBits, new Random()));
 			JSONObject json = getFactorJson(number);
 			BigInteger factor = json.getJSONObject("resultMap")
 					.getBigInteger("factor");
 			assertEquals(number.mod(factor), BigInteger.ZERO);
 
 		}
+	}
+
+	@Test
+	public void testLittleNumberFactor() {
+		generateTest(100, 8);
 	}
 
 	@Test
@@ -114,38 +119,15 @@ public class FactorTaskWebControllerTest {
 						.getCode());
 	}
 
-	@Test
-	public void testMassInvalidTasks() {
-		for (int i = 0; i < 500; i++)
-			assertEquals(
-					getFactorHttpResponse(BigInteger.valueOf(-10))
-							.getStatusLine().getStatusCode(),
-					ru.babobka.vsjws.model.HttpResponse.ResponseCode.BAD_REQUEST
-							.getCode());
-	}
 
 	@Test
 	public void testMediumNumberFactor() {
-		for (int i = 0; i < 100; i++) {
-			BigInteger number = BigInteger.probablePrime(16, new Random())
-					.multiply(BigInteger.probablePrime(16, new Random()));
-			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap")
-					.getBigInteger("factor");
-			assertEquals(number.mod(factor), BigInteger.ZERO);
-		}
+		generateTest(100, 16);
 	}
 
 	@Test
 	public void testBigNumberFactor() {
-		for (int i = 0; i < 10; i++) {
-			BigInteger number = BigInteger.probablePrime(32, new Random())
-					.multiply(BigInteger.probablePrime(32, new Random()));
-			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap")
-					.getBigInteger("factor");
-			assertEquals(number.mod(factor), BigInteger.ZERO);
-		}
+		generateTest(10, 32);
 	}
 
 	@Test
@@ -204,28 +186,14 @@ public class FactorTaskWebControllerTest {
 
 	}
 
-	// @Test
+	@Test
 	public void testVeryBigNumberFactor() {
-		for (int i = 0; i < 15; i++) {
-			BigInteger number = BigInteger.probablePrime(40, new Random())
-					.multiply(BigInteger.probablePrime(40, new Random()));
-			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap")
-					.getBigInteger("factor");
-			assertEquals(number.mod(factor), BigInteger.ZERO);
-		}
+		generateTest(15, 40);
 	}
 
-	// @Test
+	@Test
 	public void testExtraBigNumberFactor() {
-		for (int i = 0; i < 5; i++) {
-			BigInteger number = BigInteger.probablePrime(48, new Random())
-					.multiply(BigInteger.probablePrime(48, new Random()));
-			JSONObject json = getFactorJson(number);
-			BigInteger factor = json.getJSONObject("resultMap")
-					.getBigInteger("factor");
-			assertEquals(number.mod(factor), BigInteger.ZERO);
-		}
+		generateTest(5, 48);
 	}
 
 	public static void createSlaves() throws IOException {
